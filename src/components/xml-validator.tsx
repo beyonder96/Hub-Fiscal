@@ -446,7 +446,11 @@ export function XmlValidator() {
                 </TableHeader>
                 <TableBody>
                   {history.length > 0 ? history.map(item => {
-                     const status = statusMap[item.status];
+                     let status = statusMap[item.status as keyof typeof statusMap];
+                     if (!status) {
+                        // Handle legacy statuses from old localStorage data to prevent crashes
+                        status = (item.status as any) === 'valid' ? statusMap.success : statusMap.error;
+                     }
                      return (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium truncate max-w-xs">{item.fileName}</TableCell>
