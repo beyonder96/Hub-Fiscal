@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,112 +23,119 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { ArrowRight } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Search } from "lucide-react";
 
 interface TaxFormProps {
   onSearch: (data: TaxFormData) => void;
+  onClear: () => void;
   isSubmitting: boolean;
 }
 
-export function TaxForm({ onSearch, isSubmitting }: TaxFormProps) {
+export function TaxForm({ onSearch, onClear, isSubmitting }: TaxFormProps) {
   const form = useForm<TaxFormData>({
     resolver: zodResolver(taxFormSchema),
     defaultValues: {
-      isImported: false,
+      origin: undefined,
+      destination: undefined,
     },
   });
 
   const sortedStates = [...taxRates].sort((a, b) =>
     a.destinationStateName.localeCompare(b.destinationStateName)
   );
+  
+  const handleClear = () => {
+    form.reset();
+    onClear();
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSearch)} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          <FormField
-            control={form.control}
-            name="origin"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Estado de Origem</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o estado de origem" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="ES">Espírito Santo (ES)</SelectItem>
-                    <SelectItem value="SP">São Paulo (SP)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="destination"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Estado de Destino</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o estado de destino" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {sortedStates.map((state) => (
-                      <SelectItem
-                        key={state.destinationStateCode}
-                        value={state.destinationStateCode}
-                      >
-                        {state.destinationStateName} ({state.destinationStateCode})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="isImported"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
-              <div className="space-y-0.5">
-                <FormLabel>Item Importado?</FormLabel>
-                <FormDescription>
-                  Marque se o item é importado para aplicar a alíquota de 4%.
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting} size="lg">
-          {isSubmitting ? 'Buscando...' : 'Buscar Alíquota'}
-          <ArrowRight className="ml-2 h-5 w-5" />
-        </Button>
-      </form>
-    </Form>
+    <Card className="shadow-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-headline">
+          <Search className="h-6 w-6 text-primary"/>
+          Estados de Origem e Destino
+        </CardTitle>
+        <CardDescription>
+          Selecione os estados para consulta das alíquotas
+        </CardDescription>
+      </CardHeader>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSearch)}>
+          <CardContent className="space-y-6">
+            <FormField
+              control={form.control}
+              name="origin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estado de Origem *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o estado de origem" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="ES">Espírito Santo (ES)</SelectItem>
+                      <SelectItem value="SP">São Paulo (SP)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="destination"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estado de Destino *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o estado de destino" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {sortedStates.map((state) => (
+                        <SelectItem
+                          key={state.destinationStateCode}
+                          value={state.destinationStateCode}
+                        >
+                          {state.destinationStateName} ({state.destinationStateCode})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                <p className="font-medium text-muted-foreground">Alíquota de Itens Importados:</p>
+                <p className="font-bold text-foreground">4% (Fixa)</p>
+            </div>
+          </CardContent>
+          <CardFooter className="flex-col sm:flex-row gap-2">
+            <Button type="submit" className="w-full sm:w-auto flex-grow bg-gradient-to-r from-accent to-primary text-white" disabled={isSubmitting}>
+              <Search className="h-4 w-4 mr-2" />
+              {isSubmitting ? "Consultando..." : "Consultar Alíquotas"}
+            </Button>
+            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleClear}>
+              Limpar
+            </Button>
+          </CardFooter>
+        </form>
+      </Form>
+    </Card>
   );
 }

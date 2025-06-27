@@ -46,12 +46,16 @@ export default function Home() {
               para suas necessidades.
             </p>
             <div className="mt-8 flex justify-center gap-4">
-              <Button size="lg" className="bg-gradient-to-r from-accent to-primary text-white font-bold">
-                Abrir Chamado
-                <ArrowRight className="ml-2 h-5 w-5" />
+              <Button size="lg" className="bg-gradient-to-r from-accent to-primary text-white font-bold" asChild>
+                <Link href="/chamados">
+                  Abrir Chamado
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
               </Button>
-              <Button size="lg" variant="outline">
-                Ver Meus Chamados
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/meus-chamados">
+                  Ver Meus Chamados
+                </Link>
               </Button>
             </div>
           </div>

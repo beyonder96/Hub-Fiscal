@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CirclePercent, Factory, ShipWheel, Landmark, AlertTriangle } from "lucide-react";
+import { Factory, ShipWheel, Landmark, AlertTriangle } from "lucide-react";
 
 interface TaxResultCardProps {
   result: CalculatedRates | null;
@@ -38,7 +38,7 @@ export function TaxResultCard({ result, notFound }: TaxResultCardProps) {
     return null;
   }
 
-  const { origin, destination, isImported } = result;
+  const { origin, destination } = result;
   const interstateRate = destination.interstateRate[origin];
 
   return (
@@ -65,8 +65,9 @@ export function TaxResultCard({ result, notFound }: TaxResultCardProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
-        {isImported && (
-          <div className="bg-accent/20 border-l-4 border-accent text-accent-foreground p-4 rounded-md">
+        
+        <div className="space-y-4">
+           <div className="bg-accent/10 border-l-4 border-accent text-accent-foreground p-4 rounded-md">
             <h3 className="font-bold flex items-center gap-2">
               <ShipWheel className="h-5 w-5" />
               Alíquota para Item Importado
@@ -75,8 +76,7 @@ export function TaxResultCard({ result, notFound }: TaxResultCardProps) {
               {destination.importedRate}%
             </p>
           </div>
-        )}
-        <div className="space-y-4">
+
           <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
             <div className="flex items-center gap-3">
               <Factory className="h-6 w-6 text-muted-foreground" />

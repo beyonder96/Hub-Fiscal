@@ -1,9 +1,22 @@
+"use client";
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { BookMarked, Calculator, FileText, Shield, UserCheck } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import Link from 'next/link';
+import { cn } from '@/lib/utils';
+
+const navLinks = [
+  { href: "/chamados", label: "Chamados", icon: FileText },
+  { href: "/consulta-aliquota", label: "Consulta Alíquota", icon: Calculator },
+  { href: "/meus-chamados", label: "Meus Chamados", icon: UserCheck },
+  { href: "/admin", label: "Admin", icon: Shield },
+];
 
 export function Header() {
+  const pathname = usePathname();
+
   return (
     <header className="py-2 px-4 border-b bg-background/80 backdrop-blur-sm sticky top-0 z-40">
       <div className="container mx-auto flex items-center justify-between">
@@ -17,35 +30,21 @@ export function Header() {
             </h1>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
-            <Button asChild variant="secondary">
-              <Link href="#">
-                <FileText className="h-4 w-4 mr-2" />
-                Chamados
-              </Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="#">
-                <Calculator className="h-4 w-4 mr-2" />
-                Consulta Alíquota
-              </Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="#">
-                <UserCheck className="h-4 w-4 mr-2" />
-                Meus Chamados
-              </Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="#">
-                <Shield className="h-4 w-4 mr-2" />
-                Admin
-              </Link>
-            </Button>
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Button asChild variant={isActive ? "secondary" : "ghost"} key={link.href}>
+                  <Link href={link.href}>
+                    <link.icon className="h-4 w-4 mr-2" />
+                    {link.label}
+                  </Link>
+                </Button>
+              );
+            })}
           </nav>
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <div className="w-1 h-6 bg-gradient-to-b from-accent to-primary rounded-full" />
         </div>
       </div>
     </header>
