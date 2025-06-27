@@ -70,47 +70,70 @@ export interface NotaFiscal {
   status: "Pendente" | "Concluída";
 }
 
-// XML VALIDATOR DEFINITIONS
+// --- XML VALIDATOR DEFINITIONS ---
 
-export const NfeInputTypes = ["Revenda", "Consumo", "Devolução", "Garantia", "Outro"] as const;
+export const NfeInputTypes = ["Revenda", "Consumo"] as const;
 export type NfeInputType = (typeof NfeInputTypes)[number];
+
+export interface NfeProductData {
+    item: string;
+    cProd?: string;
+    xProd?: string;
+    cfop?: string;
+    cst?: string; // combined
+    vProd?: string;
+    vFrete?: string;
+    icms: {
+        vBC?: string;
+        pICMS?: string;
+        vICMS?: string;
+        pRedBC?: string;
+    };
+    ipi: {
+        cst?: string;
+        vBC?: string;
+        pIPI?: string;
+        vIPI?: string;
+    };
+    icmsSt: {
+        vBCST?: string;
+        pMVAST?: string;
+        pICMSST?: string;
+        vICMSST?: string;
+    };
+}
 
 export interface NfeData {
   fileName: string;
-  // Extracted fields
   versao?: string;
   chave?: string;
   // Emitter
   emitRazaoSocial?: string;
   emitCnpj?: string;
-  emitIe?: string;
-  emitEndereco?: string;
-  emitMunicipio?: string;
   emitUf?: string;
-  emitCep?: string;
-  emitCrt?: string; // Regime Tributário
+  emitCrt?: string;
   // Destination
   destRazaoSocial?: string;
   destCnpj?: string;
-  destIe?: string;
-  destEndereco?: string;
-  destMunicipio?: string;
-  destCep?: string;
   destUf?: string;
-  // Values
+  // Totals
   nNf?: string;
   dhEmi?: string;
-  vNf?: string; // Valor Total Nota
-  vBc?: string; // Base de Cálculo ICMS
-  vIcms?: string; // Valor ICMS
-  vIpi?: string; // Valor IPI
-  // Items (simplified for now, taking first item)
-  cfop?: string;
-  cst?: string;
-  csosn?: string;
-  pIcms?: string; // Alíquota ICMS
-  cMun?: string; // Código do Município
+  vNF?: string;
+  vFrete?: string;
+  // Totals from ICMSTot
+  total: {
+      vBC?: string;
+      vICMS?: string;
+      vBCST?: string;
+      vST?: string; // vICMSST
+      vIPI?: string;
+  }
+  // Products
+  products: NfeProductData[];
 }
+
+export type ValidationState = 'valid' | 'divergent' | 'not_applicable';
 
 export interface ValidationMessage {
   type: 'error' | 'warning' | 'info' | 'success';
@@ -118,19 +141,34 @@ export interface ValidationMessage {
   details?: string;
 }
 
+export interface CalculationValidation {
+    check: ValidationState;
+    message: string;
+}
+
 export interface ValidationResult {
   id: string;
   fileName: string;
-  status: 'error' | 'warning' | 'success';
-  messages: ValidationMessage[];
+  status: 'error' | 'warning' | 'success'; // File read status
   nfeData: NfeData | null;
   selectedInputType: NfeInputType;
-  otherInputType?: string;
+  // Basic structural validations
+  messages: ValidationMessage[];
+  // Calculation validations
+  calculationValidations: {
+      vBC: CalculationValidation;
+      vICMS: CalculationValidation;
+      vIPI: CalculationValidation;
+      vBCST: CalculationValidation;
+      vICMSST: CalculationValidation;
+  }
 }
 
 export interface ValidationHistoryItem {
   id: string;
   fileName: string;
   date: string; // ISO string
-  status: 'error' | 'warning' | 'success';
+  status: 'error' | 'warning' | 'success'; // File read status
+  overallValidation: 'Validada' | 'Divergente' | 'N/A';
+  icmsStStatus: ValidationState;
 }

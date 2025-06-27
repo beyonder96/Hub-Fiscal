@@ -1,13 +1,12 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Papa from "papaparse";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { ValidationResult, ValidationHistoryItem, NfeData, NfeInputType, ValidationMessage } from "@/lib/definitions";
+import type { ValidationResult, ValidationHistoryItem, NfeData, NfeInputType, ValidationMessage, NfeProductData, CalculationValidation, ValidationState } from "@/lib/definitions";
 import { NfeInputTypes } from "@/lib/definitions";
-import { companyProfiles, cstValidationRules } from "@/lib/fiscal-validator-data";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,164 +17,228 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { FileCode, Upload, CheckCircle2, XCircle, AlertTriangle, FileDown, Trash2, History, Info } from "lucide-react";
 
-const MAX_HISTORY_ITEMS = 10;
+const MAX_HISTORY_ITEMS = 15;
+const MAX_FILES = 15;
 
-const getTagValue = (doc: Document, tagName: string): string | undefined => doc.querySelector(tagName)?.textContent || undefined;
+const getTagValue = (element: Element | null, tagName: string): string | undefined => element?.querySelector(tagName)?.textContent || undefined;
 
 const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
+  const ide = xmlDoc.querySelector('ide');
   const emit = xmlDoc.querySelector('emit');
   const dest = xmlDoc.querySelector('dest');
-  const ide = xmlDoc.querySelector('ide');
   const icmsTot = xmlDoc.querySelector('ICMSTot');
-  const prod = xmlDoc.querySelector('det[nItem="1"] prod'); // first product
-  const icms = xmlDoc.querySelector('det[nItem="1"] imposto ICMS')?.firstElementChild; // gets CST or CSOSN block
-  const ipi = xmlDoc.querySelector('det[nItem="1"] imposto IPI');
+
+  const products: NfeProductData[] = Array.from(xmlDoc.querySelectorAll('det')).map(det => {
+    const prod = det.querySelector('prod');
+    const imposto = det.querySelector('imposto');
+    const icms = imposto?.querySelector('ICMS')?.firstElementChild;
+    const ipi = imposto?.querySelector('IPI');
+    const ipiTrib = ipi?.querySelector('IPITrib');
+    const icmsSt = icms?.tagName === 'ICMSST' ? icms : imposto?.querySelector('ICMS > ICMSST, ICMS > * > ICMSST');
+
+    const orig = getTagValue(icms ?? null, 'orig');
+    const cstNum = getTagValue(icms ?? null, 'CST') || getTagValue(icms ?? null, 'CSOSN');
+
+    return {
+      item: det.getAttribute('nItem') || 'N/A',
+      cProd: getTagValue(prod, 'cProd'),
+      xProd: getTagValue(prod, 'xProd'),
+      cfop: getTagValue(prod, 'CFOP'),
+      cst: `${orig || ''}${cstNum || ''}`,
+      vProd: getTagValue(prod, 'vProd'),
+      vFrete: getTagValue(prod, 'vFrete'),
+      icms: {
+        vBC: getTagValue(icms, 'vBC'),
+        pICMS: getTagValue(icms, 'pICMS'),
+        vICMS: getTagValue(icms, 'vICMS'),
+        pRedBC: getTagValue(icms, 'pRedBC'),
+      },
+      ipi: {
+        cst: getTagValue(ipi, 'CST'),
+        vBC: getTagValue(ipiTrib, 'vBC'),
+        pIPI: getTagValue(ipiTrib, 'pIPI'),
+        vIPI: getTagValue(ipiTrib, 'vIPI'),
+      },
+      icmsSt: {
+        vBCST: getTagValue(icmsSt, 'vBCST'),
+        pMVAST: getTagValue(icmsSt, 'pMVAST'),
+        pICMSST: getTagValue(icmsSt, 'pICMSST'),
+        vICMSST: getTagValue(icmsSt, 'vICMSST'),
+      }
+    };
+  });
 
   return {
     fileName,
     versao: xmlDoc.querySelector('nfeProc')?.getAttribute('versao') || 'N/A',
-    chave: xmlDoc.querySelector('infNFe')?.getAttribute('Id')?.replace('NFe', '') || 'N/A',
-    emitCnpj: getTagValue(xmlDoc, 'emit CNPJ'),
-    emitRazaoSocial: getTagValue(xmlDoc, 'emit xNome'),
-    emitIe: getTagValue(xmlDoc, 'emit IE'),
-    emitEndereco: `${getTagValue(xmlDoc, 'emit xLgr')}, ${getTagValue(xmlDoc, 'emit nro')}`,
-    emitMunicipio: getTagValue(xmlDoc, 'emit xMun'),
-    emitUf: getTagValue(xmlDoc, 'emit UF'),
-    emitCep: getTagValue(xmlDoc, 'emit CEP'),
-    emitCrt: getTagValue(xmlDoc, 'emit CRT'),
-    destCnpj: getTagValue(xmlDoc, 'dest CNPJ'),
-    destRazaoSocial: getTagValue(xmlDoc, 'dest xNome'),
-    destIe: getTagValue(xmlDoc, 'dest IE'),
-    destEndereco: `${getTagValue(xmlDoc, 'dest xLgr')}, ${getTagValue(xmlDoc, 'dest nro')}`,
-    destMunicipio: getTagValue(xmlDoc, 'dest xMun'),
-    destUf: getTagValue(xmlDoc, 'dest UF'),
-    destCep: getTagValue(xmlDoc, 'dest CEP'),
-    nNf: getTagValue(xmlDoc, 'ide nNF'),
-    dhEmi: getTagValue(xmlDoc, 'ide dhEmi'),
-    vNf: getTagValue(xmlDoc, 'ICMSTot vNF'),
-    vBc: getTagValue(xmlDoc, 'ICMSTot vBC'),
-    vIcms: getTagValue(xmlDoc, 'ICMSTot vICMS'),
-    vIpi: getTagValue(xmlDoc, 'ICMSTot vIPI'),
-    cfop: getTagValue(xmlDoc, 'det[nItem="1"] prod CFOP'),
-    cst: getTagValue(icms as Document, 'CST'),
-    csosn: getTagValue(icms as Document, 'CSOSN'),
-    pIcms: getTagValue(icms as Document, 'pICMS'),
-    cMun: getTagValue(xmlDoc, 'ide cMunFG'),
+    chave: xmlDoc.querySelector('infNFe')?.getAttribute('Id')?.replace('NFe', ''),
+    emitCnpj: getTagValue(emit, 'CNPJ'),
+    emitRazaoSocial: getTagValue(emit, 'xNome'),
+    emitUf: getTagValue(emit, 'UF'),
+    emitCrt: getTagValue(emit, 'CRT'),
+    destCnpj: getTagValue(dest, 'CNPJ'),
+    destRazaoSocial: getTagValue(dest, 'xNome'),
+    destUf: getTagValue(dest, 'UF'),
+    nNf: getTagValue(ide, 'nNF'),
+    dhEmi: getTagValue(ide, 'dhEmi'),
+    vNF: getTagValue(icmsTot, 'vNF'),
+    vFrete: getTagValue(icmsTot, 'vFrete'),
+    total: {
+      vBC: getTagValue(icmsTot, 'vBC'),
+      vICMS: getTagValue(icmsTot, 'vICMS'),
+      vBCST: getTagValue(icmsTot, 'vBCST'),
+      vST: getTagValue(icmsTot, 'vST'),
+      vIPI: getTagValue(icmsTot, 'vIPI'),
+    },
+    products,
   };
 };
 
-const runAllValidations = (data: NfeData, inputType: NfeInputType): ValidationMessage[] => {
-    const messages: ValidationMessage[] = [];
-
-    // 1. Validate Company Profile
-    const destCnpjFormatted = data.destCnpj?.replace(/[./-]/g, '');
-    const validProfile = companyProfiles.find(p => p.cnpj.replace(/[./-]/g, '') === destCnpjFormatted);
-    if (validProfile) {
-        messages.push({ type: 'success', message: "CNPJ do destinatário validado com sucesso.", details: `Correspondente a ${validProfile.razaoSocial}.` });
-    } else {
-        messages.push({ type: 'error', message: "CNPJ do destinatário inválido.", details: "O CNPJ não corresponde a nenhum cadastro da empresa." });
-    }
-
-    // 2. Validate Tax Regime (CRT vs CST/CSOSN)
-    if (data.emitCrt && cstValidationRules[data.emitCrt]) {
-        const rule = cstValidationRules[data.emitCrt];
-        const taxCode = rule.type === 'CST' ? data.cst : data.csosn;
-        const usedCodeType = rule.type === 'CST' ? 'CST' : 'CSOSN';
-        const oppositeCodeType = rule.type === 'CST' ? 'CSOSN' : 'CST';
-        const oppositeCode = rule.type === 'CST' ? data.csosn : data.cst;
-
-        if (oppositeCode) {
-            messages.push({ type: 'error', message: `Incompatibilidade de código de imposto.`, details: `${rule.description} O código ${oppositeCodeType} não deveria estar presente.` });
-        } else if (!taxCode) {
-            messages.push({ type: 'error', message: `Código de imposto ausente.`, details: `O ${usedCodeType} é obrigatório para o regime do emitente.` });
-        } else if (!rule.allowed.includes(taxCode)) {
-            messages.push({ type: 'warning', message: `Código ${usedCodeType} (${taxCode}) incomum para este regime.`, details: `Verifique se o código ${taxCode} é aplicável para ${rule.description}` });
-        } else {
-            messages.push({ type: 'success', message: 'Regime tributário e código de imposto são compatíveis.' });
-        }
-    } else {
-        messages.push({ type: 'warning', message: 'Não foi possível validar o regime tributário (CRT).' });
-    }
+const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResult['calculationValidations'] => {
+    const validations: ValidationResult['calculationValidations'] = {
+        vBC: { check: 'not_applicable', message: 'Cálculo não realizado.' },
+        vICMS: { check: 'not_applicable', message: 'Cálculo não realizado.' },
+        vIPI: { check: 'not_applicable', message: 'Cálculo não realizado.' },
+        vBCST: { check: 'not_applicable', message: 'Cálculo não realizado.' },
+        vICMSST: { check: 'not_applicable', message: 'Cálculo não realizado.' },
+    };
     
-    // 3. Validate IPI Rule
-    const vIpi = parseFloat(data.vIpi || '0');
-    if (vIpi > 0) {
-        if (inputType === 'Consumo') {
-            messages.push({ type: 'info', message: 'Para Consumo, o valor do IPI deve compor a base de cálculo do ICMS.', details: 'Esta validação requer conferência manual ou regra específica.' });
-        } else if (inputType === 'Revenda') {
-            messages.push({ type: 'info', message: 'Para Revenda, o valor do IPI não deve compor a base de cálculo do ICMS.', details: 'Esta validação requer conferência manual ou regra específica.' });
+    const tolerance = 0.02;
+
+    // vBC
+    const totalProd = data.products.reduce((acc, p) => acc + parseFloat(p.vProd || '0'), 0);
+    const totalFrete = parseFloat(data.vFrete || '0');
+    const totalIPI = parseFloat(data.total.vIPI || '0');
+    let expectedVBC = totalProd + totalFrete;
+    if (inputType === 'Consumo') {
+        expectedVBC += totalIPI;
+    }
+    const actualVBC = parseFloat(data.total.vBC || '0');
+    if (!isNaN(actualVBC) && !isNaN(expectedVBC)) {
+        if (Math.abs(expectedVBC - actualVBC) < tolerance) {
+            validations.vBC = { check: 'valid', message: `Base de Cálculo (R$ ${actualVBC.toFixed(2)}) validada.` };
+        } else {
+            validations.vBC = { check: 'divergent', message: `Base de Cálculo divergente. Esperado: R$ ${expectedVBC.toFixed(2)}, Encontrado: R$ ${actualVBC.toFixed(2)}.` };
+        }
+    }
+
+    // vICMS
+    const sumProductVIcms = data.products.reduce((acc, p) => acc + parseFloat(p.icms.vICMS || '0'), 0);
+    const actualTotalVIcms = parseFloat(data.total.vICMS || '0');
+    if (!isNaN(actualTotalVIcms) && sumProductVIcms > 0) {
+        if (Math.abs(sumProductVIcms - actualTotalVIcms) < tolerance) {
+            validations.vICMS = { check: 'valid', message: `Valor do ICMS (R$ ${actualTotalVIcms.toFixed(2)}) validado.` };
+        } else {
+            validations.vICMS = { check: 'divergent', message: `Soma do vICMS dos produtos (R$ ${sumProductVIcms.toFixed(2)}) diverge do total (R$ ${actualTotalVIcms.toFixed(2)}).` };
         }
     }
     
-    // 4. Validate ICMS Calculation
-    const vBc = parseFloat(data.vBc || '0');
-    const pIcms = parseFloat(data.pIcms || '0');
-    const vIcms = parseFloat(data.vIcms || '0');
-    if (vBc > 0 && pIcms > 0) {
-        const calculatedVIcms = (vBc * pIcms) / 100;
-        if (Math.abs(calculatedVIcms - vIcms) < 0.02) { // Tolerance for rounding
-            messages.push({ type: 'success', message: 'Cálculo do ICMS verificado com sucesso.', details: `Base R$ ${vBc.toFixed(2)} x Alíquota ${pIcms.toFixed(2)}% ≈ R$ ${vIcms.toFixed(2)}` });
-        } else {
-            messages.push({ type: 'error', message: 'Valor do ICMS não corresponde ao cálculo.', details: `Esperado: R$ ${calculatedVIcms.toFixed(2)}. Encontrado: R$ ${vIcms.toFixed(2)}.` });
-        }
-    } else {
-        messages.push({ type: 'info', message: 'Não foi possível validar o cálculo de ICMS (dados insuficientes).' });
+    // vIPI
+    const sumProductVIpi = data.products.reduce((acc, p) => acc + parseFloat(p.ipi.vIPI || '0'), 0);
+    const actualTotalVIpi = parseFloat(data.total.vIPI || '0');
+    if (!isNaN(actualTotalVIpi) && sumProductVIpi > 0) {
+      if (Math.abs(sumProductVIpi - actualTotalVIpi) < tolerance) {
+        validations.vIPI = { check: 'valid', message: `Valor do IPI (R$ ${actualTotalVIpi.toFixed(2)}) validado.` };
+      } else {
+        validations.vIPI = { check: 'divergent', message: `Soma do vIPI dos produtos (R$ ${sumProductVIpi.toFixed(2)}) diverge do total (R$ ${actualTotalVIpi.toFixed(2)}).` };
+      }
     }
 
-    return messages;
+    // vBCST and vICMSST
+    const sumProductVBCST = data.products.reduce((acc, p) => acc + parseFloat(p.icmsSt.vBCST || '0'), 0);
+    const actualTotalVBCST = parseFloat(data.total.vBCST || '0');
+     if (!isNaN(actualTotalVBCST) && sumProductVBCST > 0) {
+        if (Math.abs(sumProductVBCST - actualTotalVBCST) < tolerance) {
+            validations.vBCST = { check: 'valid', message: `Base de Cálculo ST (R$ ${actualTotalVBCST.toFixed(2)}) validada.` };
+        } else {
+            validations.vBCST = { check: 'divergent', message: `Soma do vBCST dos produtos (R$ ${sumProductVBCST.toFixed(2)}) diverge do total (R$ ${actualTotalVBCST.toFixed(2)}).` };
+        }
+    }
+    
+    const sumProductVICMSST = data.products.reduce((acc, p) => acc + parseFloat(p.icmsSt.vICMSST || '0'), 0);
+    const actualTotalVICMSST = parseFloat(data.total.vST || '0');
+     if (!isNaN(actualTotalVICMSST) && sumProductVICMSST > 0) {
+        if (Math.abs(sumProductVICMSST - actualTotalVICMSST) < tolerance) {
+            validations.vICMSST = { check: 'valid', message: `Valor do ICMS-ST (R$ ${actualTotalVICMSST.toFixed(2)}) validado.` };
+        } else {
+            validations.vICMSST = { check: 'divergent', message: `Soma do vICMSST dos produtos (R$ ${sumProductVICMSST.toFixed(2)}) diverge do total (R$ ${actualTotalVICMSST.toFixed(2)}).` };
+        }
+    }
+
+    return validations;
 }
 
-
-const processNfeFile = (xmlString: string, fileName: string, inputType: NfeInputType, otherValue?: string): ValidationResult => {
+const processNfeFile = (xmlString: string, fileName: string, inputType: NfeInputType): ValidationResult => {
     const id = `${fileName}-${new Date().getTime()}`;
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, "application/xml");
     const parserError = xmlDoc.querySelector("parsererror");
 
+    const baseResult = {
+        id,
+        fileName,
+        selectedInputType: inputType,
+        nfeData: null,
+        messages: [] as ValidationMessage[],
+        calculationValidations: {
+            vBC: { check: 'not_applicable', message: '' },
+            vICMS: { check: 'not_applicable', message: '' },
+            vIPI: { check: 'not_applicable', message: '' },
+            vBCST: { check: 'not_applicable', message: '' },
+            vICMSST: { check: 'not_applicable', message: '' },
+        }
+    };
+
     if (parserError) {
         return {
-            id,
-            fileName,
+            ...baseResult,
             status: 'error',
             messages: [{ type: 'error', message: 'Erro de sintaxe XML.', details: parserError.textContent || "O arquivo não é um XML bem formado." }],
-            nfeData: null,
-            selectedInputType: inputType,
-            otherInputType: otherValue,
         };
     }
 
     if (!xmlDoc.querySelector("nfeProc")) {
          return {
-            id,
-            fileName,
+            ...baseResult,
             status: 'error',
             messages: [{ type: 'error', message: 'Estrutura inválida.', details: 'A tag raiz <nfeProc> não foi encontrada.' }],
-            nfeData: null,
-            selectedInputType: inputType,
-            otherInputType: otherValue,
         };
     }
 
     const nfeData = parseNfeXml(xmlDoc, fileName);
-    const messages = runAllValidations(nfeData, inputType);
+    const calculationValidations = runValidations(nfeData, inputType);
     
-    const hasErrors = messages.some(m => m.type === 'error');
-    const hasWarnings = messages.some(m => m.type === 'warning');
+    // Simple structural message for now
+    const messages: ValidationMessage[] = [{ type: 'success', message: 'Arquivo XML lido com sucesso.' }];
+
+    const hasDivergence = Object.values(calculationValidations).some(v => v.check === 'divergent');
 
     return {
-        id,
-        fileName,
-        status: hasErrors ? 'error' : hasWarnings ? 'warning' : 'success',
-        messages,
+        ...baseResult,
+        status: 'success',
         nfeData,
-        selectedInputType: inputType,
-        otherInputType: otherValue
+        messages,
+        calculationValidations
     };
 }
 
+const ValidationStatusDisplay = ({ validation }: { validation: CalculationValidation }) => {
+    if (validation.check === 'not_applicable') {
+        return <p className="text-sm text-muted-foreground">Não aplicável</p>;
+    }
+    const isDivergent = validation.check === 'divergent';
+    return (
+        <div className={`p-3 rounded-lg ${isDivergent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-green-100 dark:bg-green-900/30'}`}>
+            <div className={`flex items-center gap-2 font-bold ${isDivergent ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
+                {isDivergent ? <XCircle className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+                <span>{isDivergent ? 'Divergente' : 'Validada'}</span>
+            </div>
+            <p className="text-xs mt-1">{validation.message}</p>
+        </div>
+    );
+};
 
 export function XmlValidator() {
   const [results, setResults] = useState<ValidationResult[]>([]);
@@ -195,11 +258,17 @@ export function XmlValidator() {
   }, []);
 
   const saveToHistory = (newResult: ValidationResult) => {
+    if (newResult.status !== 'success' || !newResult.nfeData) return;
+
+    const hasDivergence = Object.values(newResult.calculationValidations).some(v => v.check === 'divergent');
+
     const historyItem: ValidationHistoryItem = {
       id: newResult.id,
       fileName: newResult.fileName,
       date: new Date().toISOString(),
       status: newResult.status,
+      overallValidation: hasDivergence ? 'Divergente' : 'Validada',
+      icmsStStatus: newResult.calculationValidations.vICMSST.check
     };
 
     setHistory(prevHistory => {
@@ -211,9 +280,13 @@ export function XmlValidator() {
 
   const handleFileChange = (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    if (files.length > MAX_FILES) {
+        toast({ variant: "destructive", title: "Limite excedido", description: `Por favor, selecione no máximo ${MAX_FILES} arquivos.` });
+        return;
+    }
 
-    const newResultsPromises: Promise<ValidationResult>[] = Array.from(files).map(file => {
-      return new Promise((resolve, reject) => {
+    const newResultsPromises: Promise<ValidationResult | null>[] = Array.from(files).map(file => {
+      return new Promise((resolve) => {
         if (file.type === "text/xml" || file.name.endsWith(".xml")) {
           const reader = new FileReader();
           reader.onload = (evt) => {
@@ -221,17 +294,20 @@ export function XmlValidator() {
             const validation = processNfeFile(content, file.name, 'Revenda');
             resolve(validation);
           };
-          reader.onerror = (err) => reject(err);
+          reader.onerror = () => {
+            toast({ variant: "destructive", title: "Erro de Leitura", description: `Não foi possível ler o arquivo '${file.name}'.` });
+            resolve(null);
+          };
           reader.readAsText(file);
         } else {
           toast({ variant: "destructive", title: "Arquivo inválido", description: `O arquivo '${file.name}' não é um XML.` });
-          resolve(null as any); // Resolve with null to filter out later
+          resolve(null);
         }
       });
     });
 
     Promise.all(newResultsPromises).then(newResults => {
-        const validResults = newResults.filter(r => r !== null);
+        const validResults = newResults.filter((r): r is ValidationResult => r !== null);
         validResults.forEach(saveToHistory);
         setResults(validResults);
     });
@@ -249,21 +325,16 @@ export function XmlValidator() {
     handleFileChange(files);
   };
 
-  const updateResultInputType = (id: string, inputType: NfeInputType, otherValue?: string) => {
+  const updateResultInputType = (id: string, inputType: NfeInputType) => {
     setResults(prev => prev.map(r => {
       if (r.id !== id || !r.nfeData) return r;
       
-      const newMessages = runAllValidations(r.nfeData, inputType);
-      const hasErrors = newMessages.some(m => m.type === 'error');
-      const hasWarnings = newMessages.some(m => m.type === 'warning');
-      const newStatus = hasErrors ? 'error' : hasWarnings ? 'warning' : 'success';
+      const newCalculations = runValidations(r.nfeData, inputType);
       
       return { 
         ...r, 
-        selectedInputType: inputType, 
-        otherInputType: otherValue ?? r.otherInputType,
-        messages: newMessages,
-        status: newStatus
+        selectedInputType: inputType,
+        calculationValidations: newCalculations
       };
     }));
   };
@@ -273,29 +344,37 @@ export function XmlValidator() {
       toast({ title: "Nenhum dado para exportar." });
       return;
     }
-    const dataToExport = results.map(r => ({
-      "Arquivo": r.fileName,
-      "Status Validação": r.status,
-      "Tipo de Entrada": r.selectedInputType === 'Outro' ? r.otherInputType : r.selectedInputType,
-      "Chave NFe": r.nfeData?.chave,
-      "Versão NFe": r.nfeData?.versao,
-      "CNPJ Emitente": r.nfeData?.emitCnpj,
-      "Razão Social Emitente": r.nfeData?.emitRazaoSocial,
-      "CNPJ Destinatário": r.nfeData?.destCnpj,
-      "Razão Social Destinatário": r.nfeData?.destRazaoSocial,
-      "Número Nota": r.nfeData?.nNf,
-      "Valor Total": r.nfeData?.vNf,
-      "Data Emissão": r.nfeData?.dhEmi ? format(new Date(r.nfeData.dhEmi), "dd/MM/yyyy HH:mm:ss") : "",
-      "CFOP": r.nfeData?.cfop,
-      "Validações": r.messages.map(m => `[${m.type.toUpperCase()}] ${m.message} (${m.details || ''})`).join(" | "),
-    }));
+    const dataToExport = results.flatMap(r => 
+        r.nfeData?.products.map(p => ({
+            "Arquivo": r.fileName,
+            "Tipo de Entrada": r.selectedInputType,
+            "Chave NFe": r.nfeData?.chave,
+            "Número Nota": r.nfeData?.nNf,
+            "Data Emissão": r.nfeData?.dhEmi ? format(new Date(r.nfeData.dhEmi), "dd/MM/yyyy HH:mm:ss") : "",
+            "Item": p.item,
+            "Produto": p.xProd,
+            "CFOP": p.cfop,
+            "CST": p.cst,
+            "Valor Produto": p.vProd,
+            "Base ICMS": p.icms.vBC,
+            "Alíquota ICMS": p.icms.pICMS,
+            "Valor ICMS": p.icms.vICMS,
+            "Base IPI": p.ipi.vBC,
+            "Alíquota IPI": p.ipi.pIPI,
+            "Valor IPI": p.ipi.vIPI,
+            "Base ICMS-ST": p.icmsSt.vBCST,
+            "MVA-ST": p.icmsSt.pMVAST,
+            "Alíquota ICMS-ST": p.icmsSt.pICMSST,
+            "Valor ICMS-ST": p.icmsSt.vICMSST,
+        })) || []
+    );
 
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "relatorio_validacao_nfe.csv");
+    link.setAttribute("download", "relatorio_validacao_nfe_produtos.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -314,15 +393,20 @@ export function XmlValidator() {
     info: { icon: Info, color: "text-blue-500", badge: "default", label: "Info"}
   };
 
+  const formatPercent = (value?: string) => {
+    const num = parseFloat(value || '0');
+    return !isNaN(num) ? `${num.toFixed(2)}%` : 'N/A';
+  }
+
   return (
-    <Card className="w-full max-w-5xl mx-auto shadow-lg border">
+    <Card className="w-full max-w-6xl mx-auto shadow-lg border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-2xl font-headline">
           <FileCode className="h-6 w-6 text-primary" />
           Validador Fiscal de NFe
         </CardTitle>
         <CardDescription>
-          Arraste e solte arquivos XML para uma validação fiscal completa, incluindo regras comerciais e tributárias.
+          Arraste e solte até 15 arquivos XML para uma validação fiscal completa, incluindo regras e cálculos.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -354,36 +438,41 @@ export function XmlValidator() {
             {results.length > 0 ? (
               <Accordion type="single" collapsible className="w-full" defaultValue={results[0].id}>
                 {results.map((result) => {
-                  const overallStatus = statusMap[result.status];
+                  const hasDivergence = Object.values(result.calculationValidations).some(v => v.check === 'divergent');
+                  const overallStatus = result.status === 'error' ? 'Erro' : hasDivergence ? 'Divergente' : 'Validada';
                   return (
                     <AccordionItem value={result.id} key={result.id}>
                       <AccordionTrigger>
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <overallStatus.icon className={`h-5 w-5 ${overallStatus.color} flex-shrink-0`} />
-                          <span className="truncate font-medium flex-1">{result.fileName}</span>
-                          <Badge variant={overallStatus.badge as any} className="ml-auto flex-shrink-0">{overallStatus.label}</Badge>
+                          <span className="truncate font-medium flex-1 text-left">{result.fileName}</span>
+                           <Badge variant={overallStatus === 'Erro' ? 'destructive' : overallStatus === 'Divergente' ? 'secondary' : 'default'} className="ml-auto flex-shrink-0">
+                            {overallStatus}
+                          </Badge>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-2 md:p-4 space-y-6 bg-secondary/30 rounded-b-md">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                           <div>
-                              <h4 className="font-semibold mb-2 text-primary">Checklist de Validação</h4>
-                              <div className="space-y-2">
-                                {result.messages.map((msg, i) => {
-                                  const status = statusMap[msg.type];
-                                  return (
-                                    <Alert key={i} className="p-3">
-                                      <status.icon className={`h-4 w-4 ${status.color}`} />
-                                      <AlertTitle className="font-semibold text-sm">{msg.message}</AlertTitle>
-                                      {msg.details && <AlertDescription className="text-xs">{msg.details}</AlertDescription>}
-                                    </Alert>
-                                  )
-                                })}
-                              </div>
+                        {result.status === 'error' ? (
+                            <Alert variant="destructive">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>{result.messages[0].message}</AlertTitle>
+                                <AlertDescription>{result.messages[0].details}</AlertDescription>
+                            </Alert>
+                        ) : (
+                        <>
+                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                           <div className="space-y-4">
+                               <h4 className="font-semibold text-primary">Informações Gerais</h4>
+                               <div className="grid grid-cols-2 gap-2 text-sm p-3 bg-background rounded-lg border">
+                                    <span className="font-medium text-muted-foreground">Chave</span><span className="truncate">{result.nfeData?.chave || "N/A"}</span>
+                                    <span className="font-medium text-muted-foreground">Nº NFe</span><span>{result.nfeData?.nNf || "N/A"}</span>
+                                    <span className="font-medium text-muted-foreground">Emissão</span><span>{result.nfeData?.dhEmi ? format(new Date(result.nfeData.dhEmi), "dd/MM/yy HH:mm") : 'N/A'}</span>
+                                    <span className="font-medium text-muted-foreground">Valor Total</span><span className="font-bold">R$ {result.nfeData?.vNF || "0.00"}</span>
+                                    <span className="font-medium text-muted-foreground">Frete Total</span><span>R$ {result.nfeData?.vFrete || "0.00"}</span>
+                               </div>
                            </div>
                            <div>
                               <h4 className="font-semibold mb-2 text-primary">Tipo de Entrada da Nota</h4>
-                              <RadioGroup value={result.selectedInputType} onValueChange={(v: NfeInputType) => updateResultInputType(result.id, v)}>
+                              <RadioGroup value={result.selectedInputType} onValueChange={(v: NfeInputType) => updateResultInputType(result.id, v)} className="flex gap-4">
                                 {NfeInputTypes.map(type => (
                                   <div key={type} className="flex items-center space-x-2">
                                     <RadioGroupItem value={type} id={`${result.id}-${type}`} />
@@ -391,31 +480,85 @@ export function XmlValidator() {
                                   </div>
                                 ))}
                               </RadioGroup>
-                              {result.selectedInputType === 'Outro' && (
-                                <Input 
-                                  placeholder="Especifique o tipo" 
-                                  className="mt-2"
-                                  value={result.otherInputType || ""}
-                                  onChange={(e) => updateResultInputType(result.id, 'Outro', e.target.value)}
-                                />
-                              )}
                            </div>
                         </div>
-                         {result.nfeData && (
-                          <Accordion type="single" collapsible>
-                            <AccordionItem value="nfe-details">
-                                <AccordionTrigger className="text-base font-semibold text-primary">Detalhes da NFe</AccordionTrigger>
-                                <AccordionContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-xs">
-                                    <div className="font-semibold text-muted-foreground">Chave</div><div>{result.nfeData.chave}</div>
-                                    <div className="font-semibold text-muted-foreground">Nº</div><div>{result.nfeData.nNf}</div>
-                                    <div className="font-semibold text-muted-foreground">Emissão</div><div>{result.nfeData.dhEmi ? format(new Date(result.nfeData.dhEmi), "dd/MM/yyyy HH:mm") : 'N/A'}</div>
-                                    <div className="font-semibold text-muted-foreground">Valor</div><div>R$ {result.nfeData.vNf}</div>
-                                    <div className="font-semibold text-muted-foreground">Emitente</div><div>{result.nfeData.emitRazaoSocial} ({result.nfeData.emitCnpj})</div>
-                                    <div className="font-semibold text-muted-foreground">Destinatário</div><div>{result.nfeData.destRazaoSocial} ({result.nfeData.destCnpj})</div>
-                                </AccordionContent>
-                            </AccordionItem>
-                          </Accordion>
-                         )}
+
+                        <Tabs defaultValue="fiscal">
+                             <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="fiscal">Dados Fiscais</TabsTrigger>
+                                <TabsTrigger value="products">Produtos</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="fiscal" className="mt-4 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <Card>
+                                        <CardHeader><CardTitle>Tributos ICMS</CardTitle></CardHeader>
+                                        <CardContent className="space-y-2">
+                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Base de Cálculo: </span>R$ {result.nfeData?.total.vBC || '0.00'}</div>
+                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Valor ICMS: </span>R$ {result.nfeData?.total.vICMS || '0.00'}</div>
+                                            <ValidationStatusDisplay validation={result.calculationValidations.vICMS} />
+                                        </CardContent>
+                                    </Card>
+                                    <Card>
+                                        <CardHeader><CardTitle>Tributos IPI</CardTitle></CardHeader>
+                                        <CardContent className="space-y-2">
+                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Alíquota IPI: </span>{formatPercent(result.nfeData?.products[0]?.ipi.pIPI)}</div>
+                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Valor IPI: </span>R$ {result.nfeData?.total.vIPI || '0.00'}</div>
+                                            <ValidationStatusDisplay validation={result.calculationValidations.vIPI} />
+                                        </CardContent>
+                                    </Card>
+                                     <Card>
+                                        <CardHeader><CardTitle>Tributos ICMS-ST</CardTitle></CardHeader>
+                                        <CardContent className="space-y-2">
+                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Base Cálculo ST: </span>R$ {result.nfeData?.total.vBCST || '0.00'}</div>
+                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Valor ICMS-ST: </span>R$ {result.nfeData?.total.vST || '0.00'}</div>
+                                            <ValidationStatusDisplay validation={result.calculationValidations.vICMSST} />
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </TabsContent>
+                             <TabsContent value="products" className="mt-4">
+                                <div className="rounded-md border overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Item</TableHead>
+                                            <TableHead>CST</TableHead>
+                                            <TableHead>CFOP</TableHead>
+                                            <TableHead>Base ICMS</TableHead>
+                                            <TableHead>Alíq. ICMS</TableHead>
+                                            <TableHead>Valor ICMS</TableHead>
+                                            <TableHead>Base IPI</TableHead>
+                                            <TableHead>Alíq. IPI</TableHead>
+                                            <TableHead>Valor IPI</TableHead>
+                                            <TableHead>Base ICMS-ST</TableHead>
+                                            <TableHead>MVA-ST</TableHead>
+                                            <TableHead>Valor ICMS-ST</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {result.nfeData?.products.map(p => (
+                                            <TableRow key={p.item}>
+                                                <TableCell className="font-medium">{p.xProd}</TableCell>
+                                                <TableCell>{p.cst}</TableCell>
+                                                <TableCell>{p.cfop}</TableCell>
+                                                <TableCell>R$ {p.icms.vBC || '0.00'}</TableCell>
+                                                <TableCell>{formatPercent(p.icms.pICMS)}</TableCell>
+                                                <TableCell>R$ {p.icms.vICMS || '0.00'}</TableCell>
+                                                <TableCell>R$ {p.ipi.vBC || '0.00'}</TableCell>
+                                                <TableCell>{formatPercent(p.ipi.pIPI)}</TableCell>
+                                                <TableCell>R$ {p.ipi.vIPI || '0.00'}</TableCell>
+                                                <TableCell>R$ {p.icmsSt.vBCST || '0.00'}</TableCell>
+                                                <TableCell>{formatPercent(p.icmsSt.pMVAST)}</TableCell>
+                                                <TableCell>R$ {p.icmsSt.vICMSST || '0.00'}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                        </>
+                        )}
                       </AccordionContent>
                     </AccordionItem>
                   )
@@ -441,30 +584,29 @@ export function XmlValidator() {
                   <TableRow>
                     <TableHead>Arquivo</TableHead>
                     <TableHead>Data</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
+                    <TableHead>Validação ICMS-ST</TableHead>
+                    <TableHead className="text-right">Status Geral</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.length > 0 ? history.map(item => {
-                     let status = statusMap[item.status as keyof typeof statusMap];
-                     if (!status) {
-                        // Handle legacy statuses from old localStorage data to prevent crashes
-                        status = (item.status as any) === 'valid' ? statusMap.success : statusMap.error;
-                     }
-                     return (
+                  {history.length > 0 ? history.map(item => (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium truncate max-w-xs">{item.fileName}</TableCell>
                           <TableCell>{format(new Date(item.date), "dd/MM/yy HH:mm")}</TableCell>
+                          <TableCell>
+                            {item.icmsStStatus !== 'not_applicable' && (
+                                <Badge variant={item.icmsStStatus === 'divergent' ? 'secondary' : 'default'}>{item.icmsStStatus === 'divergent' ? 'Divergente' : 'Validado'}</Badge>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">
-                             <Badge variant={status.badge as any}>
-                               {status.label}
+                             <Badge variant={item.overallValidation === 'Divergente' ? 'secondary' : 'default'}>
+                               {item.overallValidation}
                              </Badge>
                           </TableCell>
                         </TableRow>
-                     )
-                  }) : (
+                     )) : (
                     <TableRow>
-                      <TableCell colSpan={3} className="h-24 text-center">
+                      <TableCell colSpan={4} className="h-24 text-center">
                         Nenhum histórico encontrado.
                       </TableCell>
                     </TableRow>
