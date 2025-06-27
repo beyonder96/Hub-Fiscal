@@ -2,14 +2,11 @@
 import type { CalculatedRates } from "@/lib/definitions";
 import {
   Card,
-  CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Factory, ShipWheel, Landmark, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 interface TaxResultCardProps {
   result: CalculatedRates | null;
@@ -42,70 +39,33 @@ export function TaxResultCard({ result, notFound }: TaxResultCardProps) {
   const interstateRate = destination.interstateRate[origin];
 
   return (
-    <Card className="w-full shadow-lg">
-      <CardHeader>
-        <CardTitle className="font-headline flex items-center justify-between">
-          <span>Resultado da Consulta</span>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">{origin}</Badge>
-            <span>→</span>
-            <Badge>{destination.destinationStateCode}</Badge>
+    <div className="w-full space-y-4">
+      <h2 className="text-2xl font-bold font-headline text-foreground">Resultado da Consulta</h2>
+    
+      <div className="p-4 rounded-lg shadow-sm bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 dark:from-slate-800/50 dark:via-slate-800/20 dark:to-background">
+          <p className="text-sm text-muted-foreground">Rota Consultada</p>
+          <div className="flex items-baseline justify-between mt-1">
+              <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                  {origin} → {destination.destinationStateCode}
+              </span>
+              <p className="font-semibold text-muted-foreground">{destination.destinationStateName}</p>
           </div>
-        </CardTitle>
-        <CardDescription>
-          Alíquotas de ICMS para a transação de{" "}
-          <span className="font-semibold text-foreground">
-            {origin}
-          </span>{" "}
-          para{" "}
-          <span className="font-semibold text-foreground">
-            {destination.destinationStateName}
-          </span>
-          .
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4">
-        
-        <div className="space-y-4">
-           <div className="bg-accent/10 border-l-4 border-accent text-accent-foreground p-4 rounded-md">
-            <h3 className="font-bold flex items-center gap-2">
-              <ShipWheel className="h-5 w-5" />
-              Alíquota para Item Importado
-            </h3>
-            <p className="text-3xl font-bold mt-1">
-              {destination.importedRate}%
-            </p>
-          </div>
+      </div>
 
-          <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-            <div className="flex items-center gap-3">
-              <Factory className="h-6 w-6 text-muted-foreground" />
-              <span className="font-medium">Alíquota Interestadual</span>
-            </div>
-            <span className="font-bold text-lg text-primary">
-              {interstateRate}%
-            </span>
-          </div>
+      <div className="p-4 rounded-lg shadow-sm bg-green-100 dark:bg-green-500/10">
+          <p className="text-sm text-green-800/80 dark:text-green-200/80">Alíquota Interestadual ICMS</p>
+          <p className="text-4xl font-bold text-green-600 dark:text-green-400">{interstateRate}%</p>
+      </div>
 
-          <Separator />
+      <div className="p-4 rounded-lg shadow-sm bg-orange-100 dark:bg-orange-500/10">
+          <p className="text-sm text-orange-800/80 dark:text-orange-200/80">Alíquota Itens Importados</p>
+          <p className="text-4xl font-bold text-orange-600 dark:text-orange-400">{destination.importedRate}%</p>
+      </div>
 
-          <div className="flex items-center justify-between p-3">
-            <div className="flex items-center gap-3">
-              <Landmark className="h-6 w-6 text-muted-foreground" />
-              <span className="font-medium">Alíquota Interna de Destino</span>
-            </div>
-            <span className="font-bold text-lg text-primary">
-              {destination.internalDestinationRate}%
-            </span>
-          </div>
-        </div>
-
-        {destination.suframa && (
-          <Badge variant="outline" className="w-fit border-amber-500 text-amber-700 dark:text-amber-400">
-            Destino com benefício SUFRAMA
-          </Badge>
-        )}
-      </CardContent>
-    </Card>
+      <div className="p-4 rounded-lg shadow-sm bg-purple-100 dark:bg-purple-500/10">
+          <p className="text-sm text-purple-800/80 dark:text-purple-200/80">Alíquota Interna do Destino</p>
+          <p className="text-4xl font-bold text-purple-600 dark:text-purple-400">{destination.internalDestinationRate}%</p>
+      </div>
+  </div>
   );
 }

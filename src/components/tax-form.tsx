@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
-import { Search } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 
 interface TaxFormProps {
   onSearch: (data: TaxFormData) => void;
@@ -51,14 +51,14 @@ export function TaxForm({ onSearch, onClear, isSubmitting }: TaxFormProps) {
   };
 
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-sm border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-headline">
           <Search className="h-6 w-6 text-primary"/>
           Estados de Origem e Destino
         </CardTitle>
         <CardDescription>
-          Selecione os estados para consulta das alíquotas
+          Selecione os estados para consulta das alíquotas.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
@@ -120,15 +120,16 @@ export function TaxForm({ onSearch, onClear, isSubmitting }: TaxFormProps) {
                 </FormItem>
               )}
             />
-            <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
+            <div className="flex items-center justify-between rounded-lg bg-muted/70 p-3 text-sm">
                 <p className="font-medium text-muted-foreground">Alíquota de Itens Importados:</p>
                 <p className="font-bold text-foreground">4% (Fixa)</p>
             </div>
           </CardContent>
-          <CardFooter className="flex-col sm:flex-row gap-2">
-            <Button type="submit" className="w-full sm:w-auto flex-grow bg-gradient-to-r from-accent to-primary text-white" disabled={isSubmitting}>
-              <Search className="h-4 w-4 mr-2" />
-              {isSubmitting ? "Consultando..." : "Consultar Alíquotas"}
+          <CardFooter className="flex items-center gap-2">
+            <Button type="submit" className="w-full flex-grow bg-gradient-to-r from-accent to-primary text-white" disabled={isSubmitting}>
+              <Search className="h-4 w-4" />
+              <span>{isSubmitting ? "Consultando..." : "Consultar Alíquotas"}</span>
+              <ArrowRight className="h-4 w-4 ml-auto" />
             </Button>
             <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleClear}>
               Limpar
