@@ -28,9 +28,11 @@ export interface CalculatedRates {
   destination: TaxRateData;
 }
 
+export const ChamadoTopics = ["Cadastro", "Cálculo de ST", "Validação de Nota", "Lançamento de Nota"] as const;
+
 export const chamadoFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
-  topic: z.string({ required_error: "Por favor, selecione um tópico." }),
+  topic: z.enum(ChamadoTopics, { required_error: "Por favor, selecione um tópico." }),
   description: z.string().min(1, { message: "Por favor, adicione uma descrição." }),
   file: z.any().optional(),
 });
@@ -42,7 +44,7 @@ export type ChamadoStatus = "Aberto" | "Em Andamento" | "Resolvido";
 export interface Chamado {
   id: string;
   name: string;
-  topic: string;
+  topic: (typeof ChamadoTopics)[number];
   description?: string;
   fileName?: string;
   status: ChamadoStatus;

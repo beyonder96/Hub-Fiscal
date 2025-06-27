@@ -1,9 +1,10 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import type { Chamado, ChamadoFormData } from "@/lib/definitions";
-import { chamadoFormSchema } from "@/lib/definitions";
+import { chamadoFormSchema, ChamadoTopics } from "@/lib/definitions";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -27,8 +28,6 @@ import { useToast } from "@/hooks/use-toast";
 import { FileText, Send } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-const topics = ["Cadastro", "Cálculo de ST", "Validação de Nota", "Lançamento de Nota"];
 
 export function ChamadoForm() {
   const { toast } = useToast();
@@ -136,7 +135,7 @@ export function ChamadoForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {topics.map((topic) => (
+                      {ChamadoTopics.map((topic) => (
                         <SelectItem key={topic} value={topic}>
                           {topic}
                         </SelectItem>
