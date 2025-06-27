@@ -70,27 +70,61 @@ export interface NotaFiscal {
   status: "Pendente" | "Concluída";
 }
 
+// XML VALIDATOR DEFINITIONS
+
 export const NfeInputTypes = ["Revenda", "Consumo", "Devolução", "Garantia", "Outro"] as const;
 export type NfeInputType = (typeof NfeInputTypes)[number];
 
 export interface NfeData {
   fileName: string;
+  // Extracted fields
+  versao?: string;
+  chave?: string;
+  // Emitter
+  emitRazaoSocial?: string;
   emitCnpj?: string;
+  emitIe?: string;
+  emitEndereco?: string;
+  emitMunicipio?: string;
+  emitUf?: string;
+  emitCep?: string;
+  emitCrt?: string; // Regime Tributário
+  // Destination
+  destRazaoSocial?: string;
   destCnpj?: string;
+  destIe?: string;
+  destEndereco?: string;
+  destMunicipio?: string;
+  destCep?: string;
+  destUf?: string;
+  // Values
   nNf?: string;
-  vNf?: string;
   dhEmi?: string;
+  vNf?: string; // Valor Total Nota
+  vBc?: string; // Base de Cálculo ICMS
+  vIcms?: string; // Valor ICMS
+  vIpi?: string; // Valor IPI
+  // Items (simplified for now, taking first item)
   cfop?: string;
-  version?: string;
+  cst?: string;
+  csosn?: string;
+  pIcms?: string; // Alíquota ICMS
+  cMun?: string; // Código do Município
+}
+
+export interface ValidationMessage {
+  type: 'error' | 'warning' | 'info' | 'success';
+  message: string;
+  details?: string;
 }
 
 export interface ValidationResult {
-  id: string; // unique id for the result
+  id: string;
   fileName: string;
-  status: 'valid' | 'invalid';
-  errors: string[];
+  status: 'error' | 'warning' | 'success';
+  messages: ValidationMessage[];
   nfeData: NfeData | null;
-  selectedInputType?: NfeInputType;
+  selectedInputType: NfeInputType;
   otherInputType?: string;
 }
 
@@ -98,5 +132,5 @@ export interface ValidationHistoryItem {
   id: string;
   fileName: string;
   date: string; // ISO string
-  status: 'valid' | 'invalid';
+  status: 'error' | 'warning' | 'success';
 }
