@@ -1,102 +1,83 @@
-
-"use client";
-
-import { useState } from "react";
 import { Header } from "@/components/header";
-import { TaxForm } from "@/components/tax-form";
-import { TaxResultCard } from "@/components/tax-result-card";
-import { AiAssistant } from "@/components/ai-assistant";
-import { findTaxRate } from "@/lib/tax-data";
-import type { CalculatedRates, TaxFormData } from "@/lib/definitions";
-import { Separator } from "@/components/ui/separator";
-import { TaxRatesChart } from "@/components/tax-rates-chart";
-import { Placeholder } from "@/components/placeholder";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, CheckCircle2, Clock, Users2 } from "lucide-react";
+import Link from "next/link";
+
+const features = [
+  {
+    icon: <CheckCircle2 className="h-8 w-8 text-green-500" />,
+    title: "Resolução Rápida",
+    description: "Atendimento especializado com tempo médio de resposta de 24 horas.",
+    bgColor: "bg-green-500/10",
+  },
+  {
+    icon: <Clock className="h-8 w-8 text-blue-500" />,
+    title: "Acompanhamento",
+    description: "Monitore o progresso dos seus chamados em tempo real.",
+    bgColor: "bg-blue-500/10",
+  },
+  {
+    icon: <Users2 className="h-8 w-8 text-purple-500" />,
+    title: "Equipe Especializada",
+    description: "Profissionais experientes em questões fiscais e tributárias.",
+    bgColor: "bg-purple-500/10",
+  },
+];
 
 export default function Home() {
-  const [result, setResult] = useState<CalculatedRates | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSearch = (data: TaxFormData) => {
-    setIsSubmitting(true);
-    setNotFound(false);
-    setResult(null);
-
-    // Simulate network delay for better UX
-    setTimeout(() => {
-      const rateInfo = findTaxRate(data.destination);
-      if (rateInfo) {
-        setResult({
-          origin: data.origin,
-          destination: rateInfo,
-          isImported: data.isImported,
-        });
-      } else {
-        setNotFound(true);
-      }
-      setIsSubmitting(false);
-    }, 500);
-  };
-
   return (
-    <div className="flex flex-col min-h-screen bg-secondary/20 dark:bg-card/20">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
-      <main className="flex-grow container mx-auto px-4 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto space-y-12">
-          <section className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">
-              Consultar Alíquota por Origem e Destino
+      <main className="flex-1">
+        <section className="py-20 md:py-32 text-center bg-grid-slate-100/[0.05] dark:bg-grid-slate-900/[0.2]">
+          <div className="container mx-auto px-4">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
+              <span className="text-foreground">Suporte </span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                Fiscal
+              </span>
+              <br />
+              <span className="text-foreground">Inteligente e Rápido</span>
             </h1>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Informe os dados fiscais abaixo para descobrir a alíquota interna
-              de destino com base em nossa base técnica.
+            <p className="mt-6 max-w-2xl mx-auto text-lg text-muted-foreground">
+              Gerencie seus chamados fiscais com eficiência. Nossa plataforma
+              moderna oferece acompanhamento em tempo real e resolução ágil
+              para suas necessidades.
             </p>
-          </section>
-
-          <div className="bg-card p-6 md:p-8 rounded-2xl shadow-xl border">
-            <TaxForm onSearch={handleSearch} isSubmitting={isSubmitting} />
+            <div className="mt-8 flex justify-center gap-4">
+              <Button size="lg" className="bg-gradient-to-r from-accent to-primary text-white font-bold">
+                Abrir Chamado
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              <Button size="lg" variant="outline">
+                Ver Meus Chamados
+              </Button>
+            </div>
           </div>
+        </section>
 
-          <div className="mt-8">
-            {isSubmitting && (
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <Skeleton className="h-12 w-3/4" />
-                  <Skeleton className="h-8 w-1/2" />
-                  <div className="space-y-4 pt-4">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <Skeleton className="h-12 w-3/4" />
-                  <Skeleton className="h-8 w-1/2" />
-                   <Skeleton className="h-64 w-full pt-4" />
-                </div>
-              </div>
-            )}
-            {!isSubmitting && result && (
-              <div className="grid md:grid-cols-2 gap-8 animate-in fade-in-50">
-                <TaxResultCard result={result} notFound={false} />
-                <TaxRatesChart data={result.destination} highlight={result.origin} />
-              </div>
-            )}
-            {!isSubmitting && notFound && (
-              <TaxResultCard result={null} notFound={true} />
-            )}
-            {!isSubmitting && !result && !notFound && (
-              <Placeholder />
-            )}
+        <section className="py-16 bg-secondary/30">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {features.map((feature, index) => (
+                <Card key={index} className="text-center shadow-md hover:shadow-lg transition-shadow duration-300 border-transparent hover:border-primary/20">
+                  <CardContent className="p-8">
+                    <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center ${feature.bgColor} mb-6`}>
+                      {feature.icon}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 text-foreground">{feature.title}</h3>
+                    <p className="text-muted-foreground">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        </section>
       </main>
-      <AiAssistant />
-      <footer className="py-6 mt-12 bg-card/50">
-        <Separator />
-        <p className="text-center text-sm text-muted-foreground pt-6">
-          © {new Date().getFullYear()} Tax Rate Finder. All rights reserved.
+      <footer className="py-6 border-t">
+        <p className="text-center text-sm text-muted-foreground">
+          © {new Date().getFullYear()} Sistema Fiscal. All rights reserved.
         </p>
       </footer>
     </div>
