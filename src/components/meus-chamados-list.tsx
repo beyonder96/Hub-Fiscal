@@ -94,7 +94,7 @@ export function MeusChamadosList({
           <Card key={chamado.id} className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex justify-between items-start gap-4">
-                <CardTitle className="text-xl font-headline">{chamado.topic}</CardTitle>
+                <CardTitle className="text-xl font-headline">{chamado.title}</CardTitle>
                 <Badge variant={getStatusVariant(chamado.status)} className="flex-shrink-0">{chamado.status}</Badge>
               </div>
               <CardDescription>

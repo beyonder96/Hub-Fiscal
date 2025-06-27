@@ -2,16 +2,28 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookMarked, Calculator, FileText, Shield, UserCheck } from "lucide-react";
+import { BookMarked, Calculator, FileCode, FileText, Search, Shield, Undo2, UserCheck } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const navLinks = [
-  { href: "/chamados", label: "Chamados", icon: FileText },
-  { href: "/consulta-aliquota", label: "Consulta Alíquota", icon: Calculator },
+const mainLinks = [
+  { href: "/chamados", label: "Abrir Chamado", icon: FileText },
   { href: "/meus-chamados", label: "Meus Chamados", icon: UserCheck },
-  { href: "/admin", label: "Admin", icon: Shield },
+];
+
+const toolLinks = [
+  { href: "/consulta-aliquota", label: "Consulta Alíquota", icon: Calculator },
+  { href: "/validador-xml", label: "Validador XML", icon: FileCode },
+  { href: "/pesquisa-tes", label: "Pesquisa de TES", icon: Search },
+  { href: "/devolucao", label: "Como Fazer Devolução", icon: Undo2 },
 ];
 
 export function Header() {
@@ -30,7 +42,7 @@ export function Header() {
             </h1>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
+            {mainLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Button asChild variant={isActive ? "secondary" : "ghost"} key={link.href}>
@@ -41,12 +53,40 @@ export function Header() {
                 </Button>
               );
             })}
+             <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost">
+                  Ferramentas
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {toolLinks.map((link) => (
+                   <DropdownMenuItem key={link.href} asChild>
+                     <Link href={link.href}>
+                        <link.icon className="h-4 w-4 mr-2" />
+                        {link.label}
+                      </Link>
+                   </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
         </div>
         <div className="flex items-center gap-3">
+           <Button asChild variant={pathname === "/admin" ? "secondary" : "ghost"}>
+              <Link href="/admin">
+                <Shield className="h-4 w-4 mr-0 md:mr-2" />
+                <span className="hidden md:inline">Admin</span>
+              </Link>
+            </Button>
           <ThemeToggle />
         </div>
       </div>
     </header>
   );
 }
+
+const ChevronDown = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m6 9 6 6 6-6"/></svg>
+)

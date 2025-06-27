@@ -1,27 +1,49 @@
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, CheckCircle2, Clock, Users2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, Calculator, FileCode, FileText, Search, Undo2 } from "lucide-react";
 import Link from "next/link";
 
 const features = [
   {
-    icon: <CheckCircle2 className="h-8 w-8 text-green-500" />,
-    title: "Resolução Rápida",
-    description: "Atendimento especializado com tempo médio de resposta de 24 horas.",
-    bgColor: "bg-green-500/10",
+    icon: <FileText className="h-8 w-8 text-primary" />,
+    title: "Abrir Chamado",
+    description: "Registre uma nova solicitação de suporte para nossa equipe fiscal.",
+    href: "/chamados",
+    bgColor: "bg-purple-100 dark:bg-purple-500/10",
+    textColor: "text-purple-600 dark:text-purple-300"
   },
   {
-    icon: <Clock className="h-8 w-8 text-blue-500" />,
-    title: "Acompanhamento",
-    description: "Monitore o progresso dos seus chamados em tempo real.",
-    bgColor: "bg-blue-500/10",
+    icon: <Calculator className="h-8 w-8 text-primary" />,
+    title: "Consulta de Alíquota",
+    description: "Consulte rapidamente as alíquotas de ICMS entre estados.",
+    href: "/consulta-aliquota",
+    bgColor: "bg-blue-100 dark:bg-blue-500/10",
+    textColor: "text-blue-600 dark:text-blue-300"
   },
   {
-    icon: <Users2 className="h-8 w-8 text-purple-500" />,
-    title: "Equipe Especializada",
-    description: "Profissionais experientes em questões fiscais e tributárias.",
-    bgColor: "bg-purple-500/10",
+    icon: <FileCode className="h-8 w-8 text-primary" />,
+    title: "Validador de XML",
+    description: "Verifique a estrutura e a validade de arquivos XML de notas fiscais.",
+    href: "/validador-xml",
+    bgColor: "bg-green-100 dark:bg-green-500/10",
+    textColor: "text-green-600 dark:text-green-300"
+  },
+   {
+    icon: <Search className="h-8 w-8 text-primary" />,
+    title: "Pesquisa de TES",
+    description: "Encontre informações detalhadas sobre o Tipo de Entrada e Saída.",
+    href: "/pesquisa-tes",
+    bgColor: "bg-yellow-100 dark:bg-yellow-500/10",
+    textColor: "text-yellow-600 dark:text-yellow-300"
+  },
+  {
+    icon: <Undo2 className="h-8 w-8 text-primary" />,
+    title: "Como Fazer Devolução",
+    description: "Guias e passo-a-passo para realizar devoluções de mercadorias.",
+    href: "/devolucao",
+    bgColor: "bg-red-100 dark:bg-red-500/10",
+    textColor: "text-red-600 dark:text-red-300"
   },
 ];
 
@@ -41,9 +63,7 @@ export default function Home() {
               <span className="text-foreground">Inteligente e Rápido</span>
             </h1>
             <p className="mt-6 max-w-2xl mx-auto text-lg text-muted-foreground">
-              Gerencie seus chamados fiscais com eficiência. Nossa plataforma
-              moderna oferece acompanhamento em tempo real e resolução ágil
-              para suas necessidades.
+              Sua central de ferramentas para simplificar a rotina fiscal. Consulte alíquotas, valide XML, abra chamados e muito mais.
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <Button size="lg" className="bg-gradient-to-r from-accent to-primary text-white font-bold" asChild>
@@ -63,15 +83,27 @@ export default function Home() {
 
         <section className="py-16 bg-secondary/30">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
-                <Card key={index} className="text-center shadow-md hover:shadow-lg transition-shadow duration-300 border-transparent hover:border-primary/20">
-                  <CardContent className="p-8">
-                    <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center ${feature.bgColor} mb-6`}>
-                      {feature.icon}
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight">Nossos Recursos</h2>
+              <p className="text-muted-foreground mt-2">Ferramentas para agilizar seu dia a dia.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {features.map((feature) => (
+                <Card key={feature.href} className="text-left shadow-md hover:shadow-xl transition-shadow duration-300 border-transparent hover:border-primary/20 group">
+                   <CardHeader className="flex-row items-center gap-4 space-y-0">
+                    <div className={`w-14 h-14 rounded-lg flex items-center justify-center ${feature.bgColor}`}>
+                      <div className={feature.textColor}>{feature.icon}</div>
                     </div>
-                    <h3 className="text-xl font-bold mb-2 text-foreground">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.description}</p>
+                     <CardTitle className="text-xl font-bold text-foreground">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground mb-4">{feature.description}</p>
+                    <Button variant="link" className="p-0" asChild>
+                      <Link href={feature.href}>
+                        Acessar Recurso
+                        <ArrowRight className="ml-2 h-4 w-4 transform transition-transform group-hover:translate-x-1" />
+                      </Link>
+                    </Button>
                   </CardContent>
                 </Card>
               ))}

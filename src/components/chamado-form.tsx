@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import type { Chamado, ChamadoFormData } from "@/lib/definitions";
-import { chamadoFormSchema, ChamadoTopics } from "@/lib/definitions";
+import { chamadoFormSchema, ChamadoTitles } from "@/lib/definitions";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -39,7 +39,7 @@ export function ChamadoForm() {
     resolver: zodResolver(chamadoFormSchema),
     defaultValues: {
       name: "",
-      topic: undefined,
+      title: undefined,
       description: "",
     },
   });
@@ -62,7 +62,7 @@ export function ChamadoForm() {
       const newChamado: Chamado = {
         id: new Date().getTime().toString(),
         name: data.name,
-        topic: data.topic,
+        title: data.title,
         description: data.description,
         fileName: fileName,
         status: "Aberto",
@@ -124,20 +124,20 @@ export function ChamadoForm() {
             />
             <FormField
               control={form.control}
-              name="topic"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tópico</FormLabel>
+                  <FormLabel>Título</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um tópico" />
+                        <SelectValue placeholder="Selecione um título" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {ChamadoTopics.map((topic) => (
-                        <SelectItem key={topic} value={topic}>
-                          {topic}
+                      {ChamadoTitles.map((title) => (
+                        <SelectItem key={title} value={title}>
+                          {title}
                         </SelectItem>
                       ))}
                     </SelectContent>

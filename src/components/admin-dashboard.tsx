@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
 import { TrendingUp, CheckCircle, Clock, AlertTriangle, BarChartHorizontal, Users } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { AdminNotasFiscais } from "./admin-notas-fiscais";
 
 export function AdminDashboard() {
     const [chamados, setChamados] = useState<Chamado[]>([]);
@@ -29,6 +31,10 @@ export function AdminDashboard() {
 
     useEffect(() => {
         refreshChamados();
+         window.addEventListener('storage', refreshChamados);
+         return () => {
+            window.removeEventListener('storage', refreshChamados);
+        };
     }, []);
 
     const updateChamadoStatus = (chamadoId: string, newStatus: ChamadoStatus) => {
@@ -47,12 +53,12 @@ export function AdminDashboard() {
         const taxaConclusao = total > 0 ? (concluidos / total) * 100 : 0;
         const taxaEmProgresso = total > 0 ? (emProgresso / total) * 100 : 0;
 
-        const chamadosPorCategoria = chamados.reduce((acc, chamado) => {
-            acc[chamado.topic] = (acc[chamado.topic] || 0) + 1;
+        const chamadosPorTitulo = chamados.reduce((acc, chamado) => {
+            acc[chamado.title] = (acc[chamado.title] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
 
-        return { total, concluidos, emProgresso, pendentes, taxaConclusao, taxaEmProgresso, chamadosPorCategoria };
+        return { total, concluidos, emProgresso, pendentes, taxaConclusao, taxaEmProgresso, chamadosPorTitulo };
     }, [chamados]);
 
     if (isLoading) {
@@ -115,12 +121,12 @@ export function AdminDashboard() {
                 </Card>
                 <Card className="md:col-span-2">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg"><Users className="h-5 w-5" />Chamados por Categoria</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-lg"><Users className="h-5 w-5" />Chamados por Título</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 pt-2">
-                        {Object.entries(stats.chamadosPorCategoria).length > 0 ? Object.entries(stats.chamadosPorCategoria).map(([topic, count]) => (
-                            <div key={topic} className="flex items-center justify-between text-sm">
-                                <span className="font-medium">{topic}</span>
+                        {Object.entries(stats.chamadosPorTitulo).length > 0 ? Object.entries(stats.chamadosPorTitulo).map(([title, count]) => (
+                            <div key={title} className="flex items-center justify-between text-sm">
+                                <span className="font-medium">{title}</span>
                                 <div className="flex items-center gap-4">
                                     <Progress value={(count / (stats.total || 1)) * 100} className="w-24 h-2 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary" />
                                     <span className="font-bold w-4 text-right">{count}</span>
@@ -131,10 +137,28 @@ export function AdminDashboard() {
                 </Card>
             </div>
             
-            <AdminChamadosManagement 
-                chamados={chamados} 
-                onUpdateStatus={updateChamadoStatus} 
-            />
+             <Tabs defaultValue="chamados">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="chamados">Gerenciar Chamados</TabsTrigger>
+                    <TabsTrigger value="notas">Acompanhar Notas Fiscais</TabsTrigger>
+                </TabsList>
+                <TabsContent value="chamados">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Gerenciamento de Chamados</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <AdminChamadosManagement 
+                                chamados={chamados} 
+                                onUpdateStatus={updateChamadoStatus} 
+                            />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="notas">
+                    <AdminNotasFiscais />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

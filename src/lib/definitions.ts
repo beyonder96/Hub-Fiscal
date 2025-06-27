@@ -21,6 +21,7 @@ export interface TaxRateData {
   importedRate: number;
   internalDestinationRate: number;
   suframa: boolean;
+  protocol: boolean;
 }
 
 export interface CalculatedRates {
@@ -28,11 +29,11 @@ export interface CalculatedRates {
   destination: TaxRateData;
 }
 
-export const ChamadoTopics = ["Cadastro", "Cálculo de ST", "Validação de Nota", "Lançamento de Nota"] as const;
+export const ChamadoTitles = ["Cadastro", "Cálculo de ST", "Validação de Nota", "Lançamento de Nota"] as const;
 
 export const chamadoFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
-  topic: z.enum(ChamadoTopics, { required_error: "Por favor, selecione um tópico." }),
+  title: z.enum(ChamadoTitles, { required_error: "Por favor, selecione um título." }),
   description: z.string().min(1, { message: "Por favor, adicione uma descrição." }),
   file: z.any().optional(),
 });
@@ -44,9 +45,27 @@ export type ChamadoStatus = "Aberto" | "Em Andamento" | "Resolvido";
 export interface Chamado {
   id: string;
   name: string;
-  topic: (typeof ChamadoTopics)[number];
+  title: (typeof ChamadoTitles)[number];
   description?: string;
   fileName?: string;
   status: ChamadoStatus;
   createdAt: string; // ISO string
+}
+
+export const notaFiscalSchema = z.object({
+  number: z.string().min(1, { message: "O número da nota é obrigatório." }),
+  issueDate: z.date({ required_error: "A data de emissão é obrigatória." }),
+  notes: z.string().optional(),
+  reminderDate: z.date().optional(),
+});
+
+export type NotaFiscalFormData = z.infer<typeof notaFiscalSchema>;
+
+export interface NotaFiscal {
+  id: string;
+  number: string;
+  issueDate: string; // ISO string
+  notes?: string;
+  reminderDate?: string; // ISO string
+  status: "Pendente" | "Concluída";
 }
