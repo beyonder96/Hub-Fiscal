@@ -69,3 +69,34 @@ export interface NotaFiscal {
   reminderDate?: string; // ISO string
   status: "Pendente" | "Concluída";
 }
+
+export const NfeInputTypes = ["Revenda", "Consumo", "Devolução", "Garantia", "Outro"] as const;
+export type NfeInputType = (typeof NfeInputTypes)[number];
+
+export interface NfeData {
+  fileName: string;
+  emitCnpj?: string;
+  destCnpj?: string;
+  nNf?: string;
+  vNf?: string;
+  dhEmi?: string;
+  cfop?: string;
+  version?: string;
+}
+
+export interface ValidationResult {
+  id: string; // unique id for the result
+  fileName: string;
+  status: 'valid' | 'invalid';
+  errors: string[];
+  nfeData: NfeData | null;
+  selectedInputType?: NfeInputType;
+  otherInputType?: string;
+}
+
+export interface ValidationHistoryItem {
+  id: string;
+  fileName: string;
+  date: string; // ISO string
+  status: 'valid' | 'invalid';
+}
