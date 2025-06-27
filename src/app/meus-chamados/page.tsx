@@ -1,18 +1,17 @@
 import { Header } from "@/components/header";
+import { MeusChamadosList } from "@/components/meus-chamados-list";
 import { UserCheck } from "lucide-react";
 
 export default function MeusChamadosPage() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-muted/30 dark:bg-background">
       <Header />
-      <main className="flex-1 flex flex-col items-center justify-center bg-background text-center p-4">
-        <div className="p-4 bg-muted rounded-full mb-4">
-          <UserCheck className="h-12 w-12 text-muted-foreground" />
+      <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
+        <div className="flex items-center gap-4 mb-8">
+            <UserCheck className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold tracking-tight font-headline">Meus Chamados</h1>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight">Meus Chamados</h1>
-        <p className="mt-4 text-lg text-muted-foreground">
-          Esta página está em construção.
-        </p>
+        <MeusChamadosList />
       </main>
     </div>
   );

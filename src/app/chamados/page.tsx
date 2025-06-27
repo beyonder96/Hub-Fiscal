@@ -1,18 +1,12 @@
 import { Header } from "@/components/header";
-import { FileText } from "lucide-react";
+import { ChamadoForm } from "@/components/chamado-form";
 
 export default function ChamadosPage() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-muted/30 dark:bg-background">
       <Header />
-      <main className="flex-1 flex flex-col items-center justify-center bg-background text-center p-4">
-        <div className="p-4 bg-muted rounded-full mb-4">
-          <FileText className="h-12 w-12 text-muted-foreground" />
-        </div>
-        <h1 className="text-4xl font-bold tracking-tight">Chamados</h1>
-        <p className="mt-4 text-lg text-muted-foreground">
-          Esta página está em construção.
-        </p>
+      <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
+        <ChamadoForm />
       </main>
     </div>
   );

@@ -27,3 +27,24 @@ export interface CalculatedRates {
   origin: "ES" | "SP";
   destination: TaxRateData;
 }
+
+export const chamadoFormSchema = z.object({
+  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
+  topic: z.string({ required_error: "Por favor, selecione um tópico." }),
+  description: z.string().min(1, { message: "Por favor, adicione uma descrição." }),
+  file: z.any().optional(),
+});
+
+export type ChamadoFormData = z.infer<typeof chamadoFormSchema>;
+
+export type ChamadoStatus = "Aberto" | "Em Andamento" | "Resolvido";
+
+export interface Chamado {
+  id: string;
+  name: string;
+  topic: string;
+  description?: string;
+  fileName?: string;
+  status: ChamadoStatus;
+  createdAt: string; // ISO string
+}
