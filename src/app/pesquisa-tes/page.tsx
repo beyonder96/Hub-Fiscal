@@ -97,7 +97,8 @@ export default function PesquisaTesPage() {
     resetSubsequentSelections(1);
   };
 
-  const showStQuestionForMatrizVenda = company === 'matriz' && operation === 'venda' && salePurpose === 'revenda' && saleType === 'normal' && destinationState && taxRates.find(r => r.destinationStateCode === destinationState)?.protocol;
+  const showStQuestionForMatrizVenda = company === 'matriz' && operation === 'venda' && salePurpose === 'revenda' && saleType === 'normal' && destinationState;
+  const isStQuestionRequired = showStQuestionForMatrizVenda && taxRates.find(r => r.destinationStateCode === destinationState)?.protocol;
 
   const isSearchDisabled = (() => {
     if (!company || !operation) return true;
@@ -113,7 +114,7 @@ export default function PesquisaTesPage() {
       }
       if (saleType === 'normal') {
         if (!destinationState || !contributorType) return true;
-        if (showStQuestionForMatrizVenda && hasSt === null) return true;
+        if (isStQuestionRequired && hasSt === null) return true;
       }
     }
     
@@ -286,7 +287,7 @@ export default function PesquisaTesPage() {
                 </>
             )}
 
-            {showStQuestionForMatrizVenda && (
+            {showStQuestionForMatrizVenda && isStQuestionRequired && (
               <div className="space-y-4">
                 <h3 className="flex items-center gap-2 font-semibold text-lg"><ShieldCheck className="h-5 w-5 text-primary" />7. Possui ST (Substituição Tributária)?</h3>
                 <RadioGroup onValueChange={(value) => setHasSt(value === 'true')} value={hasSt === null ? '' : String(hasSt)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -311,5 +312,3 @@ export default function PesquisaTesPage() {
     </>
   );
 }
-
-    
