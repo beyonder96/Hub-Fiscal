@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck } from "lucide-react";
 
 type Company = "matriz" | "filial_es";
 type Operation = "compra" | "venda";
@@ -18,18 +19,21 @@ export default function PesquisaTesPage() {
   const [operation, setOperation] = useState<Operation | null>(null);
   const [saleType, setSaleType] = useState<SaleType | null>(null);
   const [hasSuframa, setHasSuframa] = useState<boolean | null>(null);
+  const [hasSt, setHasSt] = useState<boolean | null>(null);
 
   const handleCompanyChange = (value: Company) => {
     setCompany(value);
     setOperation(null);
     setSaleType(null);
     setHasSuframa(null);
+    setHasSt(null);
   };
 
   const handleOperationChange = (value: Operation) => {
     setOperation(value);
     setSaleType(null);
     setHasSuframa(null);
+    setHasSt(null);
   };
 
   const handleSaleTypeChange = (value: SaleType) => {
@@ -42,6 +46,9 @@ export default function PesquisaTesPage() {
     if (operation === "venda") {
       if (!saleType) return true;
       if (saleType === "zfm" && hasSuframa === null) return true;
+    }
+    if (operation === "compra") {
+        if (hasSt === null) return true;
     }
     return false;
   })();
@@ -159,6 +166,42 @@ export default function PesquisaTesPage() {
                     </RadioGroup>
                 </div>
             )}
+
+            {operation === 'compra' && (
+              <div className="space-y-4">
+                <h3 className="flex items-center gap-2 font-semibold text-lg">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  <span>Possui ST (Substituição Tributária)?</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
+                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-semibold">Ramal: 7806 ou 7542 (Fiscal)</p>
+                        <p className="text-sm text-muted-foreground">Obs: Informe o NCM para saber</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </h3>
+                <RadioGroup 
+                  onValueChange={(value) => setHasSt(value === 'true')} 
+                  value={hasSt === null ? '' : String(hasSt)}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                >
+                  <Label htmlFor="st_sim" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                    <RadioGroupItem value="true" id="st_sim" className="sr-only" />
+                    <span className="text-base font-semibold">Sim</span>
+                  </Label>
+                  <Label htmlFor="st_nao" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                    <RadioGroupItem value="false" id="st_nao" className="sr-only" />
+                    <span className="text-base font-semibold">Não</span>
+                  </Label>
+                </RadioGroup>
+              </div>
+            )}
             
             <Button size="lg" className="w-full bg-gradient-to-r from-accent to-primary text-white" disabled={isNextStepDisabled}>
                 Próximo Passo
@@ -171,4 +214,3 @@ export default function PesquisaTesPage() {
     </>
   );
 }
-
