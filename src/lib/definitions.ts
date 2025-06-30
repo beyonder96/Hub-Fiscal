@@ -72,7 +72,7 @@ export interface NotaFiscal {
 
 // --- XML VALIDATOR DEFINITIONS ---
 
-export const NfeInputTypes = ["Revenda", "Consumo"] as const;
+export const NfeInputTypes = ["Revenda", "Consumo", "Conserto"] as const;
 export type NfeInputType = (typeof NfeInputTypes)[number];
 
 export interface NfeProductData {
@@ -107,6 +107,7 @@ export interface NfeData {
   fileName: string;
   versao?: string;
   chave?: string;
+  natOp?: string;
   // Emitter
   emitRazaoSocial?: string;
   emitCnpj?: string;

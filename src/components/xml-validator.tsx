@@ -30,6 +30,12 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
   const dest = xmlDoc.querySelector('dest');
   const icmsTot = xmlDoc.querySelector('ICMSTot');
 
+  const rawNatOp = getTagValue(ide, 'natOp') || 'N/A';
+  let natOp = rawNatOp;
+  if (rawNatOp.toLowerCase().startsWith('venda merc')) {
+    natOp = 'Venda';
+  }
+
   const products: NfeProductData[] = Array.from(xmlDoc.querySelectorAll('det')).map(det => {
     const prod = det.querySelector('prod');
     const imposto = det.querySelector('imposto');
@@ -74,6 +80,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
     fileName,
     versao: xmlDoc.querySelector('nfeProc')?.getAttribute('versao') || 'N/A',
     chave: xmlDoc.querySelector('infNFe')?.getAttribute('Id')?.replace('NFe', ''),
+    natOp,
     emitCnpj: getTagValue(emit, 'CNPJ'),
     emitRazaoSocial: getTagValue(emit, 'xNome'),
     emitUf: getTagValue(emit, 'UF'),
@@ -107,6 +114,39 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     
     const tolerance = 0.02;
 
+    const firstProductCfop = data.products[0]?.cfop;
+    const isConsertoOperation = firstProductCfop === '5.915' || firstProductCfop === '6.915';
+    
+    // Handle Conserto type first
+    if (inputType === 'Conserto') {
+        const actualTotalVIcms = parseFloat(data.total.vICMS || '0');
+        const actualTotalVIpi = parseFloat(data.total.vIPI || '0');
+        const actualTotalVICMSST = parseFloat(data.total.vST || '0');
+
+        if (!isConsertoOperation) {
+            const errorMsg = `Tipo de entrada 'Conserto' selecionado, mas o CFOP (${firstProductCfop}) não é de remessa para conserto.`;
+            validations.vICMS = { check: 'divergent', message: errorMsg };
+            validations.vIPI = { check: 'divergent', message: errorMsg };
+            validations.vICMSST = { check: 'divergent', message: errorMsg };
+        } else {
+            validations.vICMS = Math.abs(actualTotalVIcms) < tolerance 
+                ? { check: 'valid', message: 'Valor do ICMS (R$ 0.00) validado para conserto.' }
+                : { check: 'divergent', message: `Valor do ICMS deve ser zero para conserto, mas foi encontrado R$ ${actualTotalVIcms.toFixed(2)}.` };
+
+            validations.vIPI = Math.abs(actualTotalVIpi) < tolerance 
+                ? { check: 'valid', message: 'Valor do IPI (R$ 0.00) validado para conserto.' }
+                : { check: 'divergent', message: `Valor do IPI deve ser zero para conserto, mas foi encontrado R$ ${actualTotalVIpi.toFixed(2)}.` };
+
+            validations.vICMSST = Math.abs(actualTotalVICMSST) < tolerance 
+                ? { check: 'valid', message: 'Valor do ICMS-ST (R$ 0.00) validado para conserto.' }
+                : { check: 'divergent', message: `Valor do ICMS-ST deve ser zero para conserto, mas foi encontrado R$ ${actualTotalVICMSST.toFixed(2)}.` };
+        }
+        
+        validations.vBC = { check: 'not_applicable', message: 'Não aplicável para conserto.' };
+        validations.vBCST = { check: 'not_applicable', message: 'Não aplicável para conserto.' };
+        return validations;
+    }
+
     const totalProd = data.products.reduce((acc, p) => acc + parseFloat(p.vProd || '0'), 0);
     const totalFrete = data.products.reduce((acc, p) => acc + parseFloat(p.vFrete || '0'), 0);
     const totalIPI = data.products.reduce((acc, p) => acc + parseFloat(p.ipi.vIPI || '0'), 0);
@@ -119,7 +159,6 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     }
 
     let expectedVBC = baseForVBC;
-    // Specific rule for ES -> ES with reduction of 58.82%
     if (data.emitUf === 'ES' && data.destUf === 'ES') {
          const pRedBC = parseFloat(data.products[0]?.icms.pRedBC || '0') / 100;
          if (pRedBC > 0) {
@@ -166,7 +205,13 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
       }
     }
 
-    // vBCST and vICMSST Validation
+    // vBCST and vICMSST Validation for ES operations
+    if (data.emitUf === 'ES' && data.destUf === 'ES') {
+        validations.vBCST = { check: 'valid', message: 'ICMS-ST não aplicável para operações internas no ES.' };
+        validations.vICMSST = { check: 'valid', message: 'ICMS-ST não aplicável para operações internas no ES.' };
+        return validations;
+    }
+
     const actualTotalVBCST = parseFloat(data.total.vBCST || '0');
     const actualTotalVICMSST = parseFloat(data.total.vST || '0');
     
@@ -202,13 +247,6 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
             validations.vICMSST = { check: 'divergent', message: `Soma do vICMSST calculado (R$ ${expectedVICMSST.toFixed(2)}) diverge do total (R$ ${actualTotalVICMSST.toFixed(2)}).` };
         }
     }
-
-    // Override for ES -> ES operations where ST is not applicable
-    if (data.emitUf === 'ES' && data.destUf === 'ES') {
-        validations.vBCST = { check: 'valid', message: 'ICMS-ST não aplicável para operações internas no ES.' };
-        validations.vICMSST = { check: 'valid', message: 'ICMS-ST não aplicável para operações internas no ES.' };
-    }
-
     return validations;
 }
 
@@ -336,7 +374,17 @@ export function XmlValidator() {
           const reader = new FileReader();
           reader.onload = (evt) => {
             const content = evt.target?.result as string;
-            const validation = processNfeFile(content, file.name, 'Revenda');
+            
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(content, "application/xml");
+            
+            let defaultInputType: NfeInputType = 'Revenda';
+            const firstProductCfop = xmlDoc.querySelector('det > prod > CFOP')?.textContent;
+            if (firstProductCfop === '5.915' || firstProductCfop === '6.915') {
+                defaultInputType = 'Conserto';
+            }
+            
+            const validation = processNfeFile(content, file.name, defaultInputType);
             resolve(validation);
           };
           reader.onerror = () => {
@@ -503,12 +551,12 @@ export function XmlValidator() {
           <TabsContent value="results" className="mt-4">
             {results.length > 0 ? (
               <Carousel className="w-full" opts={{ align: "start" }}>
-                <CarouselContent className="-ml-4">
+                <CarouselContent>
                   {results.map((result) => {
                     const hasDivergence = Object.values(result.calculationValidations).some(v => v.check === 'divergent');
                     const overallStatus = result.status === 'error' ? 'Erro' : hasDivergence ? 'Divergente' : 'Validada';
                     return (
-                      <CarouselItem key={result.id} className="pl-4">
+                      <CarouselItem key={result.id}>
                         <div className="h-full">
                           <Card className="h-full flex flex-col">
                             <CardHeader>
@@ -528,7 +576,7 @@ export function XmlValidator() {
                                   </Alert>
                               ) : (
                               <>
-                              <div className="grid grid-cols-1 gap-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <Card>
                                       <CardHeader className="p-3"><CardTitle className="text-base">Emitente</CardTitle></CardHeader>
                                       <CardContent className="p-3 text-sm space-y-1">
@@ -545,7 +593,7 @@ export function XmlValidator() {
                                   </Card>
                                   <div>
                                     <h4 className="font-semibold mb-2 text-primary">Tipo de Entrada</h4>
-                                    <RadioGroup value={result.selectedInputType} onValueChange={(v: NfeInputType) => updateResultInputType(result.id, v)} className="flex gap-4">
+                                    <RadioGroup value={result.selectedInputType} onValueChange={(v: NfeInputType) => updateResultInputType(result.id, v)} className="flex flex-wrap gap-4">
                                       {NfeInputTypes.map(type => (
                                         <div key={type} className="flex items-center space-x-2">
                                           <RadioGroupItem value={type} id={`${result.id}-${type}`} />
@@ -565,6 +613,7 @@ export function XmlValidator() {
                                       <Card>
                                           <CardHeader><CardTitle>Geral</CardTitle></CardHeader>
                                           <CardContent className="space-y-2 text-sm">
+                                            <div className="flex justify-between"><span className="text-muted-foreground">Natureza:</span><span className="font-medium">{result.nfeData?.natOp || "N/A"}</span></div>
                                             <div className="flex justify-between"><span className="text-muted-foreground">Nº NFe:</span><span className="font-medium">{result.nfeData?.nNf || "N/A"}</span></div>
                                             <div className="flex justify-between"><span className="text-muted-foreground">Emissão:</span><span className="font-medium">{result.nfeData?.dhEmi ? format(new Date(result.nfeData.dhEmi), "dd/MM/yy HH:mm") : 'N/A'}</span></div>
                                             <div className="flex justify-between"><span className="text-muted-foreground">Frete Total:</span><span className="font-medium">R$ {result.nfeData?.vFrete || "0.00"}</span></div>
@@ -703,5 +752,3 @@ export function XmlValidator() {
     </Card>
   );
 }
-
-    
