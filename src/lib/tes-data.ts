@@ -39,7 +39,7 @@ export const tesData: TesDatabase = {
     ],
     venda: {
       consumo: {
-        zfm: [{ code: '525', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo em Zona Franca (Filial ES)' }]
+        zfm: [{ code: '525', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo em Zona Franca (Filial ES)', calculaDifal: true }]
       },
       revenda: {
         zfm: {
@@ -53,7 +53,7 @@ export const tesData: TesDatabase = {
     compra: [],
     venda: {
       consumo: {
-        zfm: [{ code: '586', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo em Zona Franca (Matriz)' }]
+        zfm: [{ code: '586', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo em Zona Franca (Matriz)', calculaDifal: true }]
       },
       revenda: {
         zfm: {
@@ -105,65 +105,67 @@ export function findVendaNormalTes(
 
   const stateData = taxRates.find(r => r.destinationStateCode === destinationState);
   if (!stateData) return undefined;
+  
+  const hasFecap = destinationState === 'RJ' || destinationState === 'AL';
 
-  const baseTES = (code: string, description: string): TesCode[] => [{ code, calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description }];
+  const baseTES = (code: string, description: string, extras: Partial<Omit<TesCode, 'code' | 'description'>> = {}): TesCode[] => [{ 
+      code, 
+      calculaIcms: true, 
+      calculaIpi: true,
+      atualizaEstoque: true,
+      description,
+      calculaFecap: hasFecap,
+      ...extras 
+  }];
 
-  // Handle Isento case first, as it's a specific override for both companies.
+  // Handle Isento case first
   if (contributorType === 'isento') {
       if (company === 'matriz') {
-          return baseTES('695', 'Venda p/ Não Contribuinte (Matriz)');
+          return baseTES('695', 'Venda p/ Não Contribuinte (Matriz)', { calculaDifal: true });
       }
       if (company === 'filial_es') {
-          return baseTES('511', 'Venda p/ Não Contribuinte (Filial ES)');
+          return baseTES('511', 'Venda p/ Não Contribuinte (Filial ES)', { calculaDifal: true });
       }
   }
 
   // --- From now on, logic is for Contribuinte only ---
-
   if (company === 'matriz') {
     if (purpose === 'revenda') {
       if (destinationState === 'SP') {
-        return [
-          { code: '526', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Revenda dentro de SP (Simples Nacional)' },
-          { code: '523', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Revenda dentro de SP (Regime Normal)' }
+        return [ // This one is special, multiple results
+          { code: '526', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Revenda dentro de SP (Simples Nacional)', calculaFecap: hasFecap },
+          { code: '523', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Revenda dentro de SP (Regime Normal)', calculaFecap: hasFecap }
         ];
       }
-      if (destinationState === 'AM') return baseTES('708', 'Venda para Revenda - Amazonas');
-
-      const protocolStatesWith509 = ['AP', 'MT', 'MS', 'MG', 'PR', 'RJ'];
-      if (protocolStatesWith509.includes(destinationState)) {
-          return baseTES('509', `Venda para Revenda - ${destinationState}`);
-      }
-
+      
       if (stateData.protocol) {
-        if (hasSt === true) return baseTES('509', `Venda para Revenda com ST - ${destinationState}`);
+        if (hasSt === true) return baseTES('509', `Venda para Revenda com ST - ${destinationState}`, { calculaIcmsSt: true });
         if (hasSt === false) return baseTES('585', `Venda para Revenda sem ST - ${destinationState}`);
         return undefined; // Must select ST
       } else {
+        // No protocol, no ST question
         return baseTES('585', `Venda para Revenda - ${destinationState}`);
       }
     }
 
     if (purpose === 'consumo') {
       if (destinationState === 'SP') {
-         return [
-          { code: '526', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo dentro de SP (Simples Nacional)' },
-          { code: '523', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo dentro de SP (Regime Normal)' }
+         return [ // Special case with multiple results
+          { code: '526', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo dentro de SP (Simples Nacional)', calculaFecap: hasFecap },
+          { code: '523', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo dentro de SP (Regime Normal)', calculaFecap: hasFecap }
         ];
       }
       
-      const consumoEspeciais: Record<string, string> = { AM: '586', MT: '581', MS: '581', MG: '581', PR: '581', RJ: '581', RS: '581' };
+      // For consumption, it's always DIFAL for interstate to contributors
+      const isDifal = true; 
+      
+      const consumoEspeciais: Record<string, string> = { AM: '586', MT: '581', MS: '581', MG: '581', PR: '581', RJ: '581', RS: '581', AP: '581' };
       if (consumoEspeciais[destinationState]) {
         const code = consumoEspeciais[destinationState];
-        return baseTES(code, `Venda p/ Consumo (DIFAL) - ${destinationState}`);
-      }
-
-      if (destinationState === 'AP') {
-        // Isento is handled above, so this must be contribuinte
-        return baseTES('581', 'Venda p/ Consumo (DIFAL Contribuinte) - AP');
+        return baseTES(code, `Venda p/ Consumo (DIFAL) - ${destinationState}`, { calculaDifal: isDifal });
       }
       
-      return baseTES('585', `Venda p/ Consumo (DIFAL) - ${destinationState}`);
+      return baseTES('585', `Venda p/ Consumo (DIFAL) - ${destinationState}`, { calculaDifal: isDifal });
     }
   }
 

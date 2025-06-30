@@ -1,13 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { TesCode } from "@/lib/definitions";
-import { CheckCircle2, SearchX, XCircle } from "lucide-react";
+import { CheckCircle2, SearchX, XCircle, ArrowRightLeft, ReceiptText, Landmark } from "lucide-react";
 
 interface TesResultsProps {
   results: TesCode[];
+  operation: "compra" | "venda" | null;
 }
 
-export function TesResults({ results }: TesResultsProps) {
+export function TesResults({ results, operation }: TesResultsProps) {
   if (results.length === 0) {
     return (
       <Card className="w-full max-w-2xl mx-auto shadow-lg border border-dashed">
@@ -35,19 +36,48 @@ export function TesResults({ results }: TesResultsProps) {
                 <h3 className="font-bold text-lg text-primary">TES: {tes.code}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{tes.description}</p>
               </div>
-              <div className="flex items-center gap-3 pt-1 flex-shrink-0">
-                <Badge variant={tes.calculaIcms ? "default" : "secondary"}>
-                  {tes.calculaIcms ? <CheckCircle2 className="mr-1 h-4 w-4" /> : <XCircle className="mr-1 h-4 w-4" />}
-                  ICMS
-                </Badge>
-                <Badge variant={tes.calculaIpi ? "default" : "secondary"}>
-                  {tes.calculaIpi ? <CheckCircle2 className="mr-1 h-4 w-4" /> : <XCircle className="mr-1 h-4 w-4" />}
-                  IPI
-                </Badge>
-                <Badge variant={tes.atualizaEstoque ? "default" : "secondary"}>
-                  {tes.atualizaEstoque ? <CheckCircle2 className="mr-1 h-4 w-4" /> : <XCircle className="mr-1 h-4 w-4" />}
-                  Estoque
-                </Badge>
+              <div className="flex items-center gap-2 pt-1 flex-shrink-0 flex-wrap justify-end">
+                {operation === 'compra' ? (
+                  <>
+                    <Badge variant={tes.calculaIcms ? "default" : "secondary"}>
+                      {tes.calculaIcms ? <CheckCircle2 className="mr-1 h-4 w-4" /> : <XCircle className="mr-1 h-4 w-4" />}
+                      ICMS
+                    </Badge>
+                    <Badge variant={tes.calculaIpi ? "default" : "secondary"}>
+                      {tes.calculaIpi ? <CheckCircle2 className="mr-1 h-4 w-4" /> : <XCircle className="mr-1 h-4 w-4" />}
+                      IPI
+                    </Badge>
+                    <Badge variant={tes.atualizaEstoque ? "default" : "secondary"}>
+                      {tes.atualizaEstoque ? <CheckCircle2 className="mr-1 h-4 w-4" /> : <XCircle className="mr-1 h-4 w-4" />}
+                      Estoque
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    <Badge variant={tes.calculaIcms ? "default" : "secondary"}>
+                      <CheckCircle2 className="mr-1 h-4 w-4" />
+                      ICMS
+                    </Badge>
+                    {tes.calculaDifal && (
+                        <Badge variant="default">
+                            <ArrowRightLeft className="mr-1 h-4 w-4" />
+                            DIFAL
+                        </Badge>
+                    )}
+                     {tes.calculaIcmsSt && (
+                        <Badge variant="default">
+                            <ReceiptText className="mr-1 h-4 w-4" />
+                            ICMS-ST
+                        </Badge>
+                    )}
+                     {tes.calculaFecap && (
+                        <Badge variant="default">
+                            <Landmark className="mr-1 h-4 w-4" />
+                            FECAP
+                        </Badge>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>

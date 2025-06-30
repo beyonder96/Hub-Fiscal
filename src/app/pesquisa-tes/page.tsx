@@ -135,6 +135,7 @@ export default function PesquisaTesPage() {
             </div>
             <TesResults
                 results={tesResults}
+                operation={operation}
             />
         </main>
       </>

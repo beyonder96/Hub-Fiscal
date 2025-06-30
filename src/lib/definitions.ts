@@ -187,6 +187,9 @@ export interface TesCode {
   calculaIcms: boolean;
   calculaIpi: boolean;
   atualizaEstoque: boolean;
+  calculaDifal?: boolean;
+  calculaIcmsSt?: boolean;
+  calculaFecap?: boolean;
   description: string;
 }
 
