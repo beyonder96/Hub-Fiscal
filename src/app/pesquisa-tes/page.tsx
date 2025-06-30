@@ -8,7 +8,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck } from "lucide-react";
+import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck, RotateCw } from "lucide-react";
+import type { TesCode } from "@/lib/definitions";
+import { findTesCodes } from "@/lib/tes-data";
+import { TesResults } from "@/components/tes-results";
 
 type Company = "matriz" | "filial_es";
 type Operation = "compra" | "venda";
@@ -20,6 +23,9 @@ export default function PesquisaTesPage() {
   const [saleType, setSaleType] = useState<SaleType | null>(null);
   const [hasSuframa, setHasSuframa] = useState<boolean | null>(null);
   const [hasSt, setHasSt] = useState<boolean | null>(null);
+  
+  const [showResults, setShowResults] = useState(false);
+  const [tesResults, setTesResults] = useState<TesCode[]>([]);
 
   const handleCompanyChange = (value: Company) => {
     setCompany(value);
@@ -40,8 +46,29 @@ export default function PesquisaTesPage() {
     setSaleType(value);
     setHasSuframa(null);
   };
+  
+  const handleSearch = () => {
+    if (company === 'filial_es' && operation === 'compra') {
+      const results = findTesCodes('filial_es', 'compra');
+      if (results) {
+        setTesResults(results);
+        setShowResults(true);
+      }
+    }
+    // Placeholder for other search logic
+  };
 
-  const isNextStepDisabled = (() => {
+  const handleReset = () => {
+    setCompany(null);
+    setOperation(null);
+    setSaleType(null);
+    setHasSuframa(null);
+    setHasSt(null);
+    setShowResults(false);
+    setTesResults([]);
+  };
+
+  const isSearchDisabled = (() => {
     if (!company || !operation) return true;
     if (operation === "venda") {
       if (!saleType) return true;
@@ -53,6 +80,26 @@ export default function PesquisaTesPage() {
     return false;
   })();
 
+  if (showResults) {
+    return (
+       <>
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
+            <div className="flex justify-end mb-4">
+                <Button variant="outline" onClick={handleReset}>
+                    <RotateCw className="mr-2 h-4 w-4" />
+                    Nova Pesquisa
+                </Button>
+            </div>
+            <TesResults
+                results={tesResults}
+                title="Resultado da Pesquisa de TES"
+                description={`Exibindo resultados para ${company === 'filial_es' ? 'Filial ES' : 'Matriz'} - ${operation === 'compra' ? 'Compra' : 'Venda'}`}
+            />
+        </main>
+      </>
+    )
+  }
 
   return (
     <>
@@ -203,8 +250,8 @@ export default function PesquisaTesPage() {
               </div>
             )}
             
-            <Button size="lg" className="w-full bg-gradient-to-r from-accent to-primary text-white" disabled={isNextStepDisabled}>
-                Próximo Passo
+            <Button size="lg" className="w-full bg-gradient-to-r from-accent to-primary text-white" disabled={isSearchDisabled} onClick={handleSearch}>
+                Pesquisar
                 <ArrowRight className="ml-2 h-5 w-5"/>
             </Button>
 

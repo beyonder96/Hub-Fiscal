@@ -175,3 +175,12 @@ export interface ValidationHistoryItem {
   overallValidation: 'Validada' | 'Divergente' | 'N/A';
   icmsStStatus: ValidationState;
 }
+
+// --- TES Search Definitions ---
+export interface TesCode {
+  code: string;
+  calculaIcms: boolean;
+  calculaIpi: boolean;
+  atualizaEstoque: boolean;
+  description: string;
+}
