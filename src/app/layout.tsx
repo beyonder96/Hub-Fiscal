@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import {ThemeProvider} from '@/components/theme-provider';
 import {Toaster} from '@/components/ui/toaster';
+import { AiAssistant } from '@/components/ai-assistant';
 
 export const metadata: Metadata = {
   title: 'Sistema Fiscal',
@@ -28,6 +29,7 @@ export default function RootLayout({
                 {children}
             </div>
             <Toaster />
+            <AiAssistant />
         </ThemeProvider>
       </body>
     </html>
