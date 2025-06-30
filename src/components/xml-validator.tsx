@@ -89,7 +89,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
       vBC: getTagValue(icmsTot, 'vBC'),
       vICMS: getTagValue(icmsTot, 'vICMS'),
       vBCST: getTagValue(icmsTot, 'vBCST'),
-      vST: getTagValue(icmsTot, 'vST'),
+      vST: getTagValue(icmsTot, 'vST'), // vICMSST
       vIPI: getTagValue(icmsTot, 'vIPI'),
     },
     products,
@@ -121,7 +121,10 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     let expectedVBC = baseForVBC;
     // Specific rule for ES -> ES with reduction of 58.82%
     if (data.emitUf === 'ES' && data.destUf === 'ES') {
-         expectedVBC = baseForVBC * (1 - 0.5882);
+         const pRedBC = parseFloat(data.products[0]?.icms.pRedBC || '0') / 100;
+         if (pRedBC > 0) {
+            expectedVBC = baseForVBC * (1 - pRedBC);
+         }
     }
     
     if (!isNaN(actualVBC)) {
@@ -168,13 +171,14 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     const actualTotalVICMSST = parseFloat(data.total.vST || '0');
     
     const { expectedVBCST, expectedVICMSST } = data.products.reduce((acc, p) => {
-        const vBC_item = parseFloat(p.icms.vBC || '0');
+        const vProd_item = parseFloat(p.vProd || '0');
+        const vFrete_item = parseFloat(p.vFrete || '0');
         const vIPI_item = parseFloat(p.ipi.vIPI || '0');
         const pMVAST_item = parseFloat(p.icmsSt.pMVAST || '0');
         const pICMSST_item = parseFloat(p.icmsSt.pICMSST || '0');
         const vICMS_item = parseFloat(p.icms.vICMS || '0');
 
-        const baseST = vBC_item + vIPI_item;
+        const baseST = vProd_item + vFrete_item + vIPI_item;
         const vbcst_item = baseST * (1 + (pMVAST_item / 100));
         const vicmsst_item = (vbcst_item * (pICMSST_item / 100)) - vICMS_item;
 
@@ -504,7 +508,7 @@ export function XmlValidator() {
                     const hasDivergence = Object.values(result.calculationValidations).some(v => v.check === 'divergent');
                     const overallStatus = result.status === 'error' ? 'Erro' : hasDivergence ? 'Divergente' : 'Validada';
                     return (
-                      <CarouselItem key={result.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                      <CarouselItem key={result.id} className="pl-4">
                         <div className="h-full">
                           <Card className="h-full flex flex-col">
                             <CardHeader>
@@ -699,3 +703,5 @@ export function XmlValidator() {
     </Card>
   );
 }
+
+    
