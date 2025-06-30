@@ -95,7 +95,8 @@ export function findVendaTesCodes(
 }
 
 
-export function findVendaNormalTesForMatriz(
+export function findVendaNormalTes(
+  company: Company,
   purpose: SalePurpose,
   destinationState: string,
   contributorType: ContributorType,
@@ -107,56 +108,69 @@ export function findVendaNormalTesForMatriz(
 
   const baseTES = (code: string, description: string): TesCode[] => [{ code, calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description }];
 
-  if (purpose === 'revenda') {
-    if (destinationState === 'SP') {
-      return [
-        { code: '526', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Revenda dentro de SP (Simples Nacional)' },
-        { code: '523', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Revenda dentro de SP (Regime Normal)' }
-      ];
-    }
-    if (destinationState === 'AM') return baseTES('708', 'Venda para Revenda - Amazonas');
+  // Handle Isento case first, as it's a specific override for both companies.
+  if (contributorType === 'isento') {
+      if (company === 'matriz') {
+          return baseTES('695', 'Venda p/ Não Contribuinte (Matriz)');
+      }
+      if (company === 'filial_es') {
+          return baseTES('511', 'Venda p/ Não Contribuinte (Filial ES)');
+      }
+  }
 
-    const protocolStatesWith509 = ['AP', 'MT', 'MS', 'MG', 'PR', 'RJ'];
-    if (protocolStatesWith509.includes(destinationState)) {
-        return baseTES('509', `Venda para Revenda - ${destinationState}`);
+  // --- From now on, logic is for Contribuinte only ---
+
+  if (company === 'matriz') {
+    if (purpose === 'revenda') {
+      if (destinationState === 'SP') {
+        return [
+          { code: '526', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Revenda dentro de SP (Simples Nacional)' },
+          { code: '523', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Revenda dentro de SP (Regime Normal)' }
+        ];
+      }
+      if (destinationState === 'AM') return baseTES('708', 'Venda para Revenda - Amazonas');
+
+      const protocolStatesWith509 = ['AP', 'MT', 'MS', 'MG', 'PR', 'RJ'];
+      if (protocolStatesWith509.includes(destinationState)) {
+          return baseTES('509', `Venda para Revenda - ${destinationState}`);
+      }
+
+      if (stateData.protocol) {
+        if (hasSt === true) return baseTES('509', `Venda para Revenda com ST - ${destinationState}`);
+        if (hasSt === false) return baseTES('585', `Venda para Revenda sem ST - ${destinationState}`);
+        return undefined; // Must select ST
+      } else {
+        return baseTES('585', `Venda para Revenda - ${destinationState}`);
+      }
     }
 
-    if (stateData.protocol) {
-      if (hasSt === true) return baseTES('509', `Venda para Revenda com ST - ${destinationState}`);
-      if (hasSt === false) return baseTES('585', `Venda para Revenda sem ST - ${destinationState}`);
-      return undefined; // Must select ST
-    } else {
-      // Non-protocol states default
-      return baseTES('585', `Venda para Revenda - ${destinationState}`);
+    if (purpose === 'consumo') {
+      if (destinationState === 'SP') {
+         return [
+          { code: '526', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo dentro de SP (Simples Nacional)' },
+          { code: '523', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo dentro de SP (Regime Normal)' }
+        ];
+      }
+      
+      const consumoEspeciais: Record<string, string> = { AM: '586', MT: '581', MS: '581', MG: '581', PR: '581', RJ: '581', RS: '581' };
+      if (consumoEspeciais[destinationState]) {
+        const code = consumoEspeciais[destinationState];
+        return baseTES(code, `Venda p/ Consumo (DIFAL) - ${destinationState}`);
+      }
+
+      if (destinationState === 'AP') {
+        // Isento is handled above, so this must be contribuinte
+        return baseTES('581', 'Venda p/ Consumo (DIFAL Contribuinte) - AP');
+      }
+      
+      return baseTES('585', `Venda p/ Consumo (DIFAL) - ${destinationState}`);
     }
   }
 
-  if (purpose === 'consumo') {
-    if (destinationState === 'SP') {
-       return [
-        { code: '526', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo dentro de SP (Simples Nacional)' },
-        { code: '523', calculaIcms: true, calculaIpi: true, atualizaEstoque: true, description: 'Venda p/ Consumo dentro de SP (Regime Normal)' }
-      ];
-    }
-    
-    // States with specific Consumption TES codes
-    const consumoEspeciais: Record<string, string> = { AM: '586', MT: '581', MS: '581', MG: '581', PR: '581', RJ: '581', RS: '581' };
-    if (consumoEspeciais[destinationState]) {
-      const code = consumoEspeciais[destinationState];
-      return baseTES(code, `Venda p/ Consumo (DIFAL) - ${destinationState}`);
-    }
-
-    if (destinationState === 'AP') {
-      if (contributorType === 'contribuinte') return baseTES('581', 'Venda p/ Consumo (DIFAL Contribuinte) - AP');
-      if (contributorType === 'isento') return baseTES('591', 'Venda p/ Consumo (DIFAL Isento) - AP');
-      return undefined;
-    }
-    
-    // Default for all others
-    return baseTES('585', `Venda p/ Consumo (DIFAL) - ${destinationState}`);
+  if (company === 'filial_es') {
+    // Logic for Filial ES and Contribuinte can be added here later.
+    return [];
   }
 
   return undefined;
 }
-
-    

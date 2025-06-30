@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck, RotateCw, ClipboardList, Globe, UserSquare } from "lucide-react";
 import type { TesCode, SalePurpose, Company, ContributorType } from "@/lib/definitions";
-import { findCompraTesCodes, findVendaTesCodes, findVendaNormalTesForMatriz } from "@/lib/tes-data";
+import { findCompraTesCodes, findVendaTesCodes, findVendaNormalTes } from "@/lib/tes-data";
 import { TesResults } from "@/components/tes-results";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { taxRates } from "@/lib/tax-data";
@@ -76,8 +76,8 @@ export default function PesquisaTesPage() {
                 results = findCompraTesCodes('filial_es');
             }
         } else if (operation === 'venda' && salePurpose && saleType) {
-            if (saleType === 'normal' && destinationState && contributorType && company === 'matriz') {
-                results = findVendaNormalTesForMatriz(salePurpose, destinationState, contributorType, hasSt);
+            if (saleType === 'normal' && destinationState && contributorType) {
+                results = findVendaNormalTes(company, salePurpose, destinationState, contributorType, hasSt);
             } else if (saleType === 'zfm') {
                 results = findVendaTesCodes(company, salePurpose, saleType, hasSuframa);
             }
@@ -114,7 +114,7 @@ export default function PesquisaTesPage() {
       }
       if (saleType === 'normal') {
         if (!destinationState || !contributorType) return true;
-        if (isStQuestionRequired && hasSt === null) return true;
+        if (company === 'matriz' && isStQuestionRequired && hasSt === null) return true;
       }
     }
     
@@ -262,7 +262,7 @@ export default function PesquisaTesPage() {
             )}
             
             {/* Venda -> Normal Flow */}
-            {company === 'matriz' && operation === 'venda' && saleType === 'normal' && (
+            {operation === 'venda' && saleType === 'normal' && (
                 <>
                 <div className="space-y-4">
                     <h3 className="flex items-center gap-2 font-semibold text-lg"><Globe className="h-5 w-5 text-primary" />5. Qual o estado de destino?</h3>
@@ -287,7 +287,7 @@ export default function PesquisaTesPage() {
                 </>
             )}
 
-            {showStQuestionForMatrizVenda && isStQuestionRequired && (
+            {company === 'matriz' && showStQuestionForMatrizVenda && isStQuestionRequired && (
               <div className="space-y-4">
                 <h3 className="flex items-center gap-2 font-semibold text-lg"><ShieldCheck className="h-5 w-5 text-primary" />7. Possui ST (Substituição Tributária)?</h3>
                 <RadioGroup onValueChange={(value) => setHasSt(value === 'true')} value={hasSt === null ? '' : String(hasSt)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
