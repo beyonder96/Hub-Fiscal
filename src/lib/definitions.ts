@@ -101,6 +101,7 @@ export interface NfeProductData {
         pMVAST?: string;
         pICMSST?: string;
         vICMSST?: string;
+        pRedBCST?: string;
     };
 }
 

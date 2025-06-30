@@ -72,6 +72,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
         pMVAST: getTagValue(icms, 'pMVAST'),
         pICMSST: getTagValue(icms, 'pICMSST'),
         vICMSST: getTagValue(icms, 'vICMSST'),
+        pRedBCST: getTagValue(icms, 'pRedBCST'),
       }
     };
   });
@@ -222,17 +223,29 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
             const vProd_item = parseFloat(p.vProd || '0');
             const vFrete_item = parseFloat(p.vFrete || '0');
             const vIPI_item = parseFloat(p.ipi.vIPI || '0');
-            const pMVAST_item = parseFloat(p.icmsSt.pMVAST || '0');
-            const pICMSST_item = parseFloat(p.icmsSt.pICMSST || '0');
             const vICMS_item = parseFloat(p.icms.vICMS || '0');
-
-            if (pMVAST_item > 0 || pICMSST_item > 0) {
-                const baseST = vProd_item + vFrete_item + vIPI_item;
-                const vbcst_item = baseST * (1 + (pMVAST_item / 100));
-                const vicmsst_item = (vbcst_item * (pICMSST_item / 100)) - vICMS_item;
-                acc.expectedVBCST += vbcst_item > 0 ? vbcst_item : 0;
-                acc.expectedVICMSST += vicmsst_item > 0 ? vicmsst_item : 0;
+        
+            // ST values from XML
+            const pMVAST_item = parseFloat(p.icmsSt.pMVAST || '0');
+            const pRedBCST_item = parseFloat(p.icmsSt.pRedBCST || '0');
+            const pICMSST_item = parseFloat(p.icmsSt.pICMSST || '0');
+            const vBCST_from_xml = parseFloat(p.icmsSt.vBCST || '0');
+        
+            let item_vBCST = vBCST_from_xml;
+        
+            // If vBCST is not provided in the item, calculate it.
+            if (item_vBCST === 0 && pMVAST_item > 0) {
+                const baseForST = vProd_item + vFrete_item + vIPI_item;
+                item_vBCST = baseForST * (1 + (pMVAST_item / 100));
+                item_vBCST = item_vBCST * (1 - (pRedBCST_item / 100));
             }
+            
+            // Calculate vICMSST based on the determined vBCST for the item
+            const item_vICMSST = (item_vBCST * (pICMSST_item / 100)) - vICMS_item;
+        
+            acc.expectedVBCST += item_vBCST > 0 ? item_vBCST : 0;
+            acc.expectedVICMSST += item_vICMSST > 0 ? item_vICMSST : 0;
+            
             return acc;
         }, { expectedVBCST: 0, expectedVICMSST: 0 });
 
@@ -657,6 +670,7 @@ export function XmlValidator() {
                                                   <TableHead>Vl. ICMS</TableHead>
                                                   <TableHead>Vl. IPI</TableHead>
                                                   <TableHead>MVA-ST</TableHead>
+                                                  <TableHead>Red. BC ST</TableHead>
                                                   <TableHead>Vl. ICMS-ST</TableHead>
                                               </TableRow>
                                           </TableHeader>
@@ -671,6 +685,7 @@ export function XmlValidator() {
                                                       <TableCell>R$ {p.icms.vICMS || '0.00'}</TableCell>
                                                       <TableCell>R$ {p.ipi.vIPI || '0.00'}</TableCell>
                                                       <TableCell>{formatPercent(p.icmsSt.pMVAST)}</TableCell>
+                                                      <TableCell>{formatPercent(p.icmsSt.pRedBCST)}</TableCell>
                                                       <TableCell>R$ {p.icmsSt.vICMSST || '0.00'}</TableCell>
                                                   </TableRow>
                                               ))}
