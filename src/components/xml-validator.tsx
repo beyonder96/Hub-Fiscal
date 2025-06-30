@@ -96,7 +96,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
       vBC: getTagValue(icmsTot, 'vBC'),
       vICMS: getTagValue(icmsTot, 'vICMS'),
       vBCST: getTagValue(icmsTot, 'vBCST'),
-      vST: getTagValue(icmsTot, 'vST'), // vICMSST
+      vICMSST: getTagValue(icmsTot, 'vICMSST'),
       vIPI: getTagValue(icmsTot, 'vIPI'),
     },
     products,
@@ -121,7 +121,7 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     if (inputType === 'Conserto') {
         const actualTotalVIcms = parseFloat(data.total.vICMS || '0');
         const actualTotalVIpi = parseFloat(data.total.vIPI || '0');
-        const actualTotalVICMSST = parseFloat(data.total.vST || '0');
+        const actualTotalVICMSST = parseFloat(data.total.vICMSST || '0');
 
         if (!isConsertoOperation) {
             const errorMsg = `Tipo de entrada 'Conserto' selecionado, mas o CFOP (${firstProductCfop}) não é de remessa para conserto.`;
@@ -213,7 +213,7 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     }
 
     const actualTotalVBCST = parseFloat(data.total.vBCST || '0');
-    const actualTotalVICMSST = parseFloat(data.total.vST || '0');
+    const actualTotalVICMSST = parseFloat(data.total.vICMSST || '0');
     
     const { expectedVBCST, expectedVICMSST } = data.products.reduce((acc, p) => {
         const vProd_item = parseFloat(p.vProd || '0');
@@ -242,7 +242,7 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     
     if (!isNaN(actualTotalVICMSST) && expectedVICMSST > 0) {
         if (Math.abs(expectedVICMSST - actualTotalVICMSST) < tolerance) {
-            validations.vICMSST = { check: 'valid', message: `Valor do ICMS-ST (R$ ${actualTotalVICMSST.toFixed(2)}) validado.` };
+            validations.vICMSST = { check: 'valid', message: `Valor do ICMS-ST (R$ ${actualTotalVICMSST.toFixed(2)}) validada.` };
         } else {
             validations.vICMSST = { check: 'divergent', message: `Soma do vICMSST calculado (R$ ${expectedVICMSST.toFixed(2)}) diverge do total (R$ ${actualTotalVICMSST.toFixed(2)}).` };
         }

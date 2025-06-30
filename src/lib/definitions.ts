@@ -127,7 +127,7 @@ export interface NfeData {
       vBC?: string;
       vICMS?: string;
       vBCST?: string;
-      vST?: string; // vICMSST
+      vICMSST?: string;
       vIPI?: string;
   }
   // Products
