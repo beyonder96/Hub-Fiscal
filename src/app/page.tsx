@@ -10,49 +10,49 @@ const features = [
     title: "Abrir Chamado",
     description: "Registre uma nova solicitação de suporte para nossa equipe fiscal.",
     href: "/chamados",
-    bgColor: "bg-purple-100 dark:bg-purple-500/10",
-    textColor: "text-purple-600 dark:text-purple-300"
+    bgColor: "bg-purple-500/10",
+    textColor: "text-purple-300"
   },
   {
     icon: <Calculator className="h-8 w-8 text-primary" />,
     title: "Consulta de Alíquota",
     description: "Consulte rapidamente as alíquotas de ICMS entre estados.",
     href: "/consulta-aliquota",
-    bgColor: "bg-blue-100 dark:bg-blue-500/10",
-    textColor: "text-blue-600 dark:text-blue-300"
+    bgColor: "bg-blue-500/10",
+    textColor: "text-blue-300"
   },
   {
     icon: <FileCode className="h-8 w-8 text-primary" />,
     title: "Validador de XML",
     description: "Verifique a estrutura e a validade de arquivos XML de notas fiscais.",
     href: "/validador-xml",
-    bgColor: "bg-green-100 dark:bg-green-500/10",
-    textColor: "text-green-600 dark:text-green-300"
+    bgColor: "bg-green-500/10",
+    textColor: "text-green-300"
   },
    {
     icon: <Search className="h-8 w-8 text-primary" />,
     title: "Pesquisa de TES",
     description: "Encontre informações detalhadas sobre o Tipo de Entrada e Saída.",
     href: "/pesquisa-tes",
-    bgColor: "bg-yellow-100 dark:bg-yellow-500/10",
-    textColor: "text-yellow-600 dark:text-yellow-300"
+    bgColor: "bg-yellow-500/10",
+    textColor: "text-yellow-300"
   },
   {
     icon: <Undo2 className="h-8 w-8 text-primary" />,
     title: "Como Fazer Devolução",
     description: "Guias e passo-a-passo para realizar devoluções de mercadorias.",
     href: "/devolucao",
-    bgColor: "bg-red-100 dark:bg-red-500/10",
-    textColor: "text-red-600 dark:text-red-300"
+    bgColor: "bg-red-500/10",
+    textColor: "text-red-300"
   },
 ];
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1">
-        <section className="py-20 md:py-32 text-center bg-grid-slate-100/[0.05] dark:bg-grid-slate-900/[0.2]">
+        <section className="py-20 md:py-32 text-center">
           <div className="container mx-auto px-4">
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
               <span className="text-foreground">Suporte </span>
@@ -81,7 +81,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-16 bg-secondary/30">
+        <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold tracking-tight">Nossos Recursos</h2>
@@ -111,7 +111,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <footer className="py-6 border-t">
+      <footer className="py-6 border-t mt-auto">
         <p className="text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} Sistema Fiscal. All rights reserved.
         </p>

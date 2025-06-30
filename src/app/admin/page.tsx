@@ -14,7 +14,7 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-muted/20 dark:bg-background">
+    <>
       <Header />
       <main className="flex-1">
         {isAuthenticated ? (
@@ -23,6 +23,6 @@ export default function AdminPage() {
           <AdminLogin onLoginSuccess={handleLoginSuccess} />
         )}
       </main>
-    </div>
+    </>
   );
 }

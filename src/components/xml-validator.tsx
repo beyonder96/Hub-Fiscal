@@ -213,8 +213,6 @@ const processNfeFile = (xmlString: string, fileName: string, inputType: NfeInput
     // Simple structural message for now
     const messages: ValidationMessage[] = [{ type: 'success', message: 'Arquivo XML lido com sucesso.' }];
 
-    const hasDivergence = Object.values(calculationValidations).some(v => v.check === 'divergent');
-
     return {
         ...baseResult,
         status: 'success',
@@ -230,8 +228,8 @@ const ValidationStatusDisplay = ({ validation }: { validation: CalculationValida
     }
     const isDivergent = validation.check === 'divergent';
     return (
-        <div className={`p-3 rounded-lg ${isDivergent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-green-100 dark:bg-green-900/30'}`}>
-            <div className={`flex items-center gap-2 font-bold ${isDivergent ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
+        <div className={`p-3 rounded-lg ${isDivergent ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
+            <div className={`flex items-center gap-2 font-bold ${isDivergent ? 'text-red-600 dark:text-red-300' : 'text-green-600 dark:text-green-300'}`}>
                 {isDivergent ? <XCircle className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
                 <span>{isDivergent ? 'Divergente' : 'Validada'}</span>
             </div>
@@ -250,10 +248,17 @@ export function XmlValidator() {
     try {
       const storedHistory = localStorage.getItem("xmlValidationHistory");
       if (storedHistory) {
-        setHistory(JSON.parse(storedHistory));
+        const parsedHistory = JSON.parse(storedHistory);
+        // Basic check to see if history format is outdated
+        if (Array.isArray(parsedHistory) && parsedHistory.every(item => 'id' in item && 'fileName' in item)) {
+          setHistory(parsedHistory);
+        } else {
+          localStorage.removeItem("xmlValidationHistory");
+        }
       }
     } catch (error) {
       console.error("Failed to load validation history:", error);
+       localStorage.removeItem("xmlValidationHistory");
     }
   }, []);
 
@@ -331,6 +336,27 @@ export function XmlValidator() {
       
       const newCalculations = runValidations(r.nfeData, inputType);
       
+      const hasDivergence = Object.values(newCalculations).some(v => v.check === 'divergent');
+      const historyItem: ValidationHistoryItem = {
+        id: r.id,
+        fileName: r.fileName,
+        date: new Date().toISOString(),
+        status: r.status,
+        overallValidation: hasDivergence ? 'Divergente' : 'Validada',
+        icmsStStatus: newCalculations.vICMSST.check
+      };
+
+      setHistory(prevHistory => {
+        const index = prevHistory.findIndex(h => h.id === id);
+        if (index > -1) {
+            const updatedHistory = [...prevHistory];
+            updatedHistory[index] = historyItem;
+            localStorage.setItem("xmlValidationHistory", JSON.stringify(updatedHistory));
+            return updatedHistory;
+        }
+        return prevHistory;
+      });
+
       return { 
         ...r, 
         selectedInputType: inputType,
@@ -399,7 +425,7 @@ export function XmlValidator() {
   }
 
   return (
-    <Card className="w-full max-w-6xl mx-auto shadow-lg border">
+    <Card className="w-full max-w-6xl mx-auto shadow-lg border-none">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-2xl font-headline">
           <FileCode className="h-6 w-6 text-primary" />
@@ -441,8 +467,9 @@ export function XmlValidator() {
                   const hasDivergence = Object.values(result.calculationValidations).some(v => v.check === 'divergent');
                   const overallStatus = result.status === 'error' ? 'Erro' : hasDivergence ? 'Divergente' : 'Validada';
                   return (
-                    <AccordionItem value={result.id} key={result.id}>
-                      <AccordionTrigger>
+                    <AccordionItem value={result.id} key={result.id} className="border-b-0">
+                      <Card className="mb-2">
+                      <AccordionTrigger className="p-4">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <span className="truncate font-medium flex-1 text-left">{result.fileName}</span>
                            <Badge variant={overallStatus === 'Erro' ? 'destructive' : overallStatus === 'Divergente' ? 'secondary' : 'default'} className="ml-auto flex-shrink-0">
@@ -462,7 +489,7 @@ export function XmlValidator() {
                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                            <div className="space-y-4">
                                <h4 className="font-semibold text-primary">Informações Gerais</h4>
-                               <div className="grid grid-cols-2 gap-2 text-sm p-3 bg-background rounded-lg border">
+                               <div className="grid grid-cols-2 gap-2 text-sm p-3 bg-background/50 rounded-lg border">
                                     <span className="font-medium text-muted-foreground">Chave</span><span className="truncate">{result.nfeData?.chave || "N/A"}</span>
                                     <span className="font-medium text-muted-foreground">Nº NFe</span><span>{result.nfeData?.nNf || "N/A"}</span>
                                     <span className="font-medium text-muted-foreground">Emissão</span><span>{result.nfeData?.dhEmi ? format(new Date(result.nfeData.dhEmi), "dd/MM/yy HH:mm") : 'N/A'}</span>
@@ -517,7 +544,7 @@ export function XmlValidator() {
                                 </div>
                             </TabsContent>
                              <TabsContent value="products" className="mt-4">
-                                <div className="rounded-md border overflow-x-auto">
+                                <div className="rounded-md border overflow-x-auto bg-background/50">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -560,6 +587,7 @@ export function XmlValidator() {
                         </>
                         )}
                       </AccordionContent>
+                      </Card>
                     </AccordionItem>
                   )
                 })}
@@ -578,8 +606,8 @@ export function XmlValidator() {
                   Limpar Histórico
                 </Button>
             </div>
-            <div className="rounded-md border">
-              <Table>
+            <Card>
+            <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Arquivo</TableHead>
@@ -595,11 +623,11 @@ export function XmlValidator() {
                           <TableCell>{format(new Date(item.date), "dd/MM/yy HH:mm")}</TableCell>
                           <TableCell>
                             {item.icmsStStatus !== 'not_applicable' && (
-                                <Badge variant={item.icmsStStatus === 'divergent' ? 'secondary' : 'default'}>{item.icmsStStatus === 'divergent' ? 'Divergente' : 'Validado'}</Badge>
+                                <Badge variant={item.icmsStStatus === 'divergent' ? 'destructive' : 'default'}>{item.icmsStStatus === 'divergent' ? 'Divergente' : 'Validado'}</Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                             <Badge variant={item.overallValidation === 'Divergente' ? 'secondary' : 'default'}>
+                             <Badge variant={item.overallValidation === 'Divergente' ? 'destructive' : 'default'}>
                                {item.overallValidation}
                              </Badge>
                           </TableCell>
@@ -613,7 +641,7 @@ export function XmlValidator() {
                   )}
                 </TableBody>
               </Table>
-            </div>
+              </Card>
           </TabsContent>
 
         </Tabs>

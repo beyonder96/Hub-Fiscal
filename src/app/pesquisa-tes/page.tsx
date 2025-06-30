@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 
 export default function PesquisaTesPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-muted/30 dark:bg-background">
+    <>
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
         <div className="flex flex-col items-center text-center gap-4 mb-8">
@@ -32,6 +32,6 @@ export default function PesquisaTesPage() {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </>
   );
 }

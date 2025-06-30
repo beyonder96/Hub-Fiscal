@@ -12,10 +12,10 @@ interface AdminStatCardProps {
 }
 
 const colorVariants = {
-    blue: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-800/50",
-    green: "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 border-green-200 dark:border-green-800/50",
-    yellow: "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/50",
-    red: "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 border-red-200 dark:border-red-800/50",
+    blue: "bg-blue-500/10 text-blue-600 dark:text-blue-300 border-blue-500/20",
+    green: "bg-green-500/10 text-green-600 dark:text-green-300 border-green-500/20",
+    yellow: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-300 border-yellow-500/20",
+    red: "bg-red-500/10 text-red-600 dark:text-red-300 border-red-500/20",
 }
 
 const iconColorVariants = {
@@ -27,7 +27,7 @@ const iconColorVariants = {
 
 export function AdminStatCard({ title, value, description, icon: Icon, color }: AdminStatCardProps) {
     return (
-        <Card className={cn("shadow-sm", colorVariants[color])}>
+        <Card className={cn("shadow-sm border-none", colorVariants[color])}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{title}</CardTitle>
                 <Icon className={cn("h-4 w-4", iconColorVariants[color])} />

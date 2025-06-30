@@ -4,47 +4,76 @@
 
 @layer base {
   :root {
+    /* Glassmorphism Theme */
     --background: 0 0% 100%;
     --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 100%;
+
+    /* Translucent Elements */
+    --card-bg: 0 0% 100% / 0.45;
+    --popover-bg: 0 0% 100% / 0.6;
+    --secondary-bg: 210 40% 96.1% / 0.4;
+    --muted-bg: 210 40% 96.1% / 0.5;
+
+    --card: var(--card-bg);
     --card-foreground: 224 71.4% 4.1%;
-    --popover: 0 0% 100%;
+    --popover: var(--popover-bg);
     --popover-foreground: 224 71.4% 4.1%;
+    
     --primary: 262.1 83.3% 57.8%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96.1%;
+    
+    --secondary: var(--secondary-bg);
     --secondary-foreground: 210 40% 9.8%;
-    --muted: 210 40% 96.1%;
+    
+    --muted: var(--muted-bg);
     --muted-foreground: 215.4 16.3% 46.9%;
+
     --accent: 243.8 91.2% 59.4%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
+
+    --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+
+    --border: 214.3 31.8% 91.4% / 0.3;
+    --input: 214.3 31.8% 91.4% / 0.4;
     --ring: 262.1 83.3% 57.8%;
-    --radius: 0.8rem;
+
+    --radius: 1rem;
   }
 
   .dark {
+    /* Dark Glassmorphism Theme */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+
+    /* Translucent Elements */
+    --card-bg: 222.2 84% 4.9% / 0.35;
+    --popover-bg: 222.2 84% 4.9% / 0.5;
+    --secondary-bg: 217.2 32.6% 17.5% / 0.4;
+    --muted-bg: 217.2 32.6% 17.5% / 0.5;
+
+    --card: var(--card-bg);
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: var(--popover-bg);
     --popover-foreground: 210 40% 98%;
+    
     --primary: 262.1 83.3% 57.8%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217.2 32.6% 17.5%;
+
+    --secondary: var(--secondary-bg);
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    
+    --muted: var(--muted-bg);
     --muted-foreground: 215 20.2% 65.1%;
+
     --accent: 243.8 91.2% 59.4%;
     --accent-foreground: 0 0% 100%;
+    
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    
+    --border: 217.2 32.6% 17.5% / 0.3;
+    --input: 217.2 32.6% 17.5% / 0.4;
     --ring: 262.1 83.3% 57.8%;
   }
 }
@@ -56,5 +85,27 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Accessibility: Reduce Transparency */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-effect, .dark .glass-effect {
+    backdrop-filter: none;
+    --tw-bg-opacity: 0.9 !important;
+  }
+  
+  :root {
+    --card-bg: 0 0% 100% / 0.9;
+    --popover-bg: 0 0% 100% / 0.95;
+    --secondary-bg: 210 40% 96.1% / 0.9;
+    --muted-bg: 210 40% 96.1% / 0.95;
+  }
+
+  .dark {
+    --card-bg: 222.2 84% 4.9% / 0.9;
+    --popover-bg: 222.2 84% 4.9% / 0.95;
+    --secondary-bg: 217.2 32.6% 17.5% / 0.9;
+    --muted-bg: 217.2 32.6% 17.5% / 0.95;
   }
 }
