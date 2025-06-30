@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Calculator, RotateCw, Info, Percent, DollarSign } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -38,6 +39,10 @@ const ResultCard = ({ title, value, isPrimary = false }: { title: string, value:
 
 export default function CalculoIcmsSt() {
   const [result, setResult] = useState<CalculationResult | null>(null);
+  const [ivaOriginal, setIvaOriginal] = useState("");
+  const [aliqInter, setAliqInter] = useState("");
+  const [aliqInterna, setAliqInterna] = useState("");
+  const [ivaAjustado, setIvaAjustado] = useState<number | null>(null);
 
   const form = useForm<IcmsStFormData>({
     resolver: zodResolver(icmsStSchema),
@@ -90,6 +95,27 @@ export default function CalculoIcmsSt() {
   const handleClear = () => {
     form.reset();
     setResult(null);
+  };
+
+  const handleIvaCalculation = () => {
+    const original = parseLocaleString(ivaOriginal) / 100;
+    const inter = parseLocaleString(aliqInter) / 100;
+    const interna = parseLocaleString(aliqInterna) / 100;
+
+    if (isNaN(original) || isNaN(inter) || isNaN(interna) || (1 - interna) === 0) {
+        setIvaAjustado(null);
+        return;
+    }
+
+    const ajustado = ((1 + original) * (1 - inter) / (1 - interna) - 1);
+    setIvaAjustado(ajustado * 100);
+  };
+
+  const handleIvaClear = () => {
+      setIvaOriginal("");
+      setAliqInter("");
+      setAliqInterna("");
+      setIvaAjustado(null);
   };
 
   return (
@@ -191,6 +217,59 @@ export default function CalculoIcmsSt() {
           </div>
         </section>
       )}
+
+      <Card className="w-full max-w-4xl mx-auto shadow-lg border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-2xl font-headline">
+            <Wand2 className="h-6 w-6 text-primary" />
+            Calculadora de IVA/MVA Ajustado
+          </CardTitle>
+          <CardDescription>
+            Descubra o valor do IVA/MVA ajustado para operações interestaduais.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <Label htmlFor="ivaOriginal">IVA/MVA Original (%)</Label>
+              <div className="relative mt-2">
+                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="ivaOriginal" placeholder="29,00" className="pl-9" value={ivaOriginal} onChange={(e) => setIvaOriginal(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="aliqInter">Alíquota Interestadual (%)</Label>
+              <div className="relative mt-2">
+                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="aliqInter" placeholder="12" className="pl-9" value={aliqInter} onChange={(e) => setAliqInter(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="aliqInterna">Alíquota Interna (%)</Label>
+              <div className="relative mt-2">
+                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="aliqInterna" placeholder="12" className="pl-9" value={aliqInterna} onChange={(e) => setAliqInterna(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          {ivaAjustado !== null && (
+              <div className="pt-6 text-center animate-in fade-in-50 duration-500">
+                   <Label className="text-sm font-medium text-muted-foreground">Resultado do IVA Ajustado</Label>
+                   <p className="text-4xl font-bold text-primary">{ivaAjustado.toFixed(2).replace('.', ',')}%</p>
+              </div>
+          )}
+        </CardContent>
+        <CardFooter className="gap-4">
+            <Button onClick={handleIvaCalculation} className="w-full sm:w-auto flex-1 bg-gradient-to-r from-accent to-primary text-white font-bold">
+                <Calculator className="mr-2 h-4 w-4" />
+                Calcular IVA Ajustado
+            </Button>
+            <Button type="button" variant="outline" onClick={handleIvaClear} className="w-full sm:w-auto">
+                <RotateCw className="mr-2 h-4 w-4" />
+                Limpar
+            </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
