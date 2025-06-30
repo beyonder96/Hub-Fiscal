@@ -32,7 +32,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
 
   const rawNatOp = getTagValue(ide, 'natOp') || 'N/A';
   let natOp = rawNatOp;
-  if (rawNatOp.toLowerCase().startsWith('venda merc')) {
+  if (rawNatOp.toLowerCase().startsWith('venda merc') || rawNatOp.toLowerCase().startsWith('vnd mer')) {
     natOp = 'Venda';
   }
 
@@ -573,7 +573,7 @@ export function XmlValidator() {
                     const overallStatus = result.status === 'error' ? 'Erro' : hasDivergence ? 'Divergente' : 'Validada';
                     return (
                       <CarouselItem key={result.id}>
-                        <div className="h-full">
+                        <div className="h-full p-1">
                           <Card className="h-full flex flex-col">
                             <CardHeader>
                               <div className="flex justify-between items-start gap-2">
@@ -637,21 +637,11 @@ export function XmlValidator() {
                                           </CardContent>
                                       </Card>
                                       <Card>
-                                          <CardHeader><CardTitle>Tributos ICMS</CardTitle></CardHeader>
-                                          <CardContent className="space-y-2">
+                                          <CardHeader><CardTitle>Validação dos Cálculos</CardTitle></CardHeader>
+                                          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                               <ValidationStatusDisplay validation={result.calculationValidations.vBC} />
                                               <ValidationStatusDisplay validation={result.calculationValidations.vICMS} />
-                                          </CardContent>
-                                      </Card>
-                                      <Card>
-                                          <CardHeader><CardTitle>Tributos IPI</CardTitle></CardHeader>
-                                          <CardContent className="space-y-2">
                                               <ValidationStatusDisplay validation={result.calculationValidations.vIPI} />
-                                          </CardContent>
-                                      </Card>
-                                      <Card>
-                                          <CardHeader><CardTitle>Tributos ICMS-ST</CardTitle></CardHeader>
-                                          <CardContent className="space-y-2">
                                               <ValidationStatusDisplay validation={result.calculationValidations.vBCST} />
                                               <ValidationStatusDisplay validation={result.calculationValidations.vICMSST} />
                                           </CardContent>
