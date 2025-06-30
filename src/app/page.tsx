@@ -1,7 +1,7 @@
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Calculator, FileCode, FileText, Search, Undo2 } from "lucide-react";
+import { ArrowRight, Calculator, FileCode, FileSpreadsheet, FileText, Search, Undo2 } from "lucide-react";
 import Link from "next/link";
 
 const features = [
@@ -28,6 +28,14 @@ const features = [
     href: "/validador-xml",
     bgColor: "bg-green-500/10",
     textColor: "text-green-300"
+  },
+  {
+    icon: <FileSpreadsheet className="h-8 w-8 text-primary" />,
+    title: "Cálculo ICMS-ST",
+    description: "Calcule o ICMS-ST de suas notas de forma rápida e precisa.",
+    href: "/calculo-icms-st",
+    bgColor: "bg-teal-500/10",
+    textColor: "text-teal-300"
   },
    {
     icon: <Search className="h-8 w-8 text-primary" />,

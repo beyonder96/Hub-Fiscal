@@ -2,7 +2,6 @@ import type {Metadata} from 'next';
 import './globals.css';
 import {ThemeProvider} from '@/components/theme-provider';
 import {Toaster} from '@/components/ui/toaster';
-import { AiAssistant } from '@/components/ai-assistant';
 import { MouseSpotlight } from '@/components/mouse-spotlight';
 
 export const metadata: Metadata = {
@@ -31,7 +30,6 @@ export default function RootLayout({
                 {children}
             </div>
             <Toaster />
-            <AiAssistant />
         </ThemeProvider>
       </body>
     </html>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookMarked, Calculator, FileCode, FileText, Search, Shield, Undo2, UserCheck } from "lucide-react";
+import { BookMarked, Calculator, FileCode, FileSpreadsheet, FileText, Search, Shield, Undo2, UserCheck } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ const mainLinks = [
 const toolLinks = [
   { href: "/consulta-aliquota", label: "Consulta Alíquota", icon: Calculator },
   { href: "/validador-xml", label: "Validador XML", icon: FileCode },
+  { href: "/calculo-icms-st", label: "Cálculo ICMS-ST", icon: FileSpreadsheet },
   { href: "/pesquisa-tes", label: "Pesquisa de TES", icon: Search },
   { href: "/devolucao", label: "Como Fazer Devolução", icon: Undo2 },
 ];
