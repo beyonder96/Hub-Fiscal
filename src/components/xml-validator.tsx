@@ -71,7 +71,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
         vBCST: getTagValue(icms, 'vBCST'),
         pMVAST: getTagValue(icms, 'pMVAST'),
         pICMSST: getTagValue(icms, 'pICMSST'),
-        vICMSST: getTagValue(icms, 'vICMSST'),
+        vICMSST: getTagValue(icms, 'vICMSST') || getTagValue(icms, 'vST'),
         pRedBCST: getTagValue(icms, 'pRedBCST'),
       }
     };
@@ -97,7 +97,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
       vBC: getTagValue(icmsTot, 'vBC'),
       vICMS: getTagValue(icmsTot, 'vICMS'),
       vBCST: getTagValue(icmsTot, 'vBCST'),
-      vICMSST: getTagValue(icmsTot, 'vICMSST'),
+      vICMSST: getTagValue(icmsTot, 'vICMSST') || getTagValue(icmsTot, 'vST'),
       vIPI: getTagValue(icmsTot, 'vIPI'),
     },
     products,
@@ -219,48 +219,21 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
             validations.vICMSST = { check: 'divergent', message: `ICMS-ST deve ser zero para operações internas no ES, mas o total vICMSST encontrado foi R$ ${actualTotalVICMSST.toFixed(2)}.` };
         }
     } else {
-        const { expectedVBCST, expectedVICMSST } = data.products.reduce((acc, p) => {
-            const vProd_item = parseFloat(p.vProd || '0');
-            const vFrete_item = parseFloat(p.vFrete || '0');
-            const vIPI_item = parseFloat(p.ipi.vIPI || '0');
-            const vICMS_item = parseFloat(p.icms.vICMS || '0');
-        
-            // ST values from XML
-            const pMVAST_item = parseFloat(p.icmsSt.pMVAST || '0');
-            const pRedBCST_item = parseFloat(p.icmsSt.pRedBCST || '0');
-            const pICMSST_item = parseFloat(p.icmsSt.pICMSST || '0');
-            const vBCST_from_xml = parseFloat(p.icmsSt.vBCST || '0');
-        
-            let item_vBCST = vBCST_from_xml;
-        
-            // If vBCST is not provided in the item, calculate it.
-            if (item_vBCST === 0 && pMVAST_item > 0) {
-                const baseForST = vProd_item + vFrete_item + vIPI_item;
-                item_vBCST = baseForST * (1 + (pMVAST_item / 100));
-                item_vBCST = item_vBCST * (1 - (pRedBCST_item / 100));
-            }
-            
-            // Calculate vICMSST based on the determined vBCST for the item
-            const item_vICMSST = (item_vBCST * (pICMSST_item / 100)) - vICMS_item;
-        
-            acc.expectedVBCST += item_vBCST > 0 ? item_vBCST : 0;
-            acc.expectedVICMSST += item_vICMSST > 0 ? item_vICMSST : 0;
-            
-            return acc;
-        }, { expectedVBCST: 0, expectedVICMSST: 0 });
+        const sumOfProductVBCST = data.products.reduce((acc, p) => acc + parseFloat(p.icmsSt.vBCST || '0'), 0);
+        const sumOfProductVICMSST = data.products.reduce((acc, p) => acc + parseFloat(p.icmsSt.vICMSST || '0'), 0);
 
         // vBCST validation
-        if (Math.abs(expectedVBCST - actualTotalVBCST) < tolerance) {
+        if (Math.abs(sumOfProductVBCST - actualTotalVBCST) < tolerance) {
             validations.vBCST = { check: 'valid', message: `Base de Cálculo ST (R$ ${actualTotalVBCST.toFixed(2)}) validada.` };
         } else {
-            validations.vBCST = { check: 'divergent', message: `Base de Cálculo ST divergente. Esperado: R$ ${expectedVBCST.toFixed(2)}, Encontrado: R$ ${actualTotalVBCST.toFixed(2)}.` };
+            validations.vBCST = { check: 'divergent', message: `Soma da Base de Cálculo ST dos produtos (R$ ${sumOfProductVBCST.toFixed(2)}) diverge do total (R$ ${actualTotalVBCST.toFixed(2)}).` };
         }
         
         // vICMSST validation
-        if (Math.abs(expectedVICMSST - actualTotalVICMSST) < tolerance) {
+        if (Math.abs(sumOfProductVICMSST - actualTotalVICMSST) < tolerance) {
             validations.vICMSST = { check: 'valid', message: `Valor do ICMS-ST (R$ ${actualTotalVICMSST.toFixed(2)}) validado.` };
         } else {
-            validations.vICMSST = { check: 'divergent', message: `Soma do vICMSST calculado (R$ ${expectedVICMSST.toFixed(2)}) diverge do total (R$ ${actualTotalVICMSST.toFixed(2)}).` };
+            validations.vICMSST = { check: 'divergent', message: `Soma do vICMS-ST dos produtos (R$ ${sumOfProductVICMSST.toFixed(2)}) diverge do total (R$ ${actualTotalVICMSST.toFixed(2)}).` };
         }
     }
     return validations;
@@ -299,7 +272,7 @@ const processNfeFile = (xmlString: string, fileName: string, inputType: NfeInput
          return {
             ...baseResult,
             status: 'error',
-            messages: [{ type: 'error', message: 'Estrutura inválida.', details: 'A tag raiz <nfeProc> não foi encontrada.' }],
+            messages: [{ type: 'error', message: 'Estrutura inválida.', details: 'A tag raiz &lt;nfeProc&gt; não foi encontrada.' }],
         };
     }
 
