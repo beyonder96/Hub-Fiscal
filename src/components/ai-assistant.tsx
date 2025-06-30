@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -50,7 +51,7 @@ export function AiAssistant() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
-            className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
+            className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50"
             size="icon"
           >
             <Bot className="h-8 w-8" />
