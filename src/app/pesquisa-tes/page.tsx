@@ -9,13 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck, RotateCw, ClipboardList } from "lucide-react";
-import type { TesCode } from "@/lib/definitions";
-import { findTesCodes } from "@/lib/tes-data";
+import type { TesCode, SalePurpose, Company } from "@/lib/definitions";
+import { findCompraTesCodes, findVendaTesCodes } from "@/lib/tes-data";
 import { TesResults } from "@/components/tes-results";
 
-type Company = "matriz" | "filial_es";
 type Operation = "compra" | "venda";
-type SalePurpose = "revenda" | "consumo";
 type SaleType = "normal" | "zfm";
 
 export default function PesquisaTesPage() {
@@ -31,6 +29,7 @@ export default function PesquisaTesPage() {
 
   const handleCompanyChange = (value: Company) => {
     setCompany(value);
+    // Reset subsequent selections
     setOperation(null);
     setSalePurpose(null);
     setSaleType(null);
@@ -40,6 +39,7 @@ export default function PesquisaTesPage() {
 
   const handleOperationChange = (value: Operation) => {
     setOperation(value);
+     // Reset subsequent selections
     setSalePurpose(null);
     setSaleType(null);
     setHasSuframa(null);
@@ -48,24 +48,34 @@ export default function PesquisaTesPage() {
 
   const handleSalePurposeChange = (value: SalePurpose) => {
     setSalePurpose(value);
+     // Reset subsequent selections
     setSaleType(null);
     setHasSuframa(null);
   };
 
   const handleSaleTypeChange = (value: SaleType) => {
     setSaleType(value);
+     // Reset subsequent selections
     setHasSuframa(null);
   };
   
   const handleSearch = () => {
-    if (company === 'filial_es' && operation === 'compra') {
-      const results = findTesCodes('filial_es', 'compra');
-      if (results) {
-        setTesResults(results);
-        setShowResults(true);
-      }
+    let results: TesCode[] | undefined = [];
+    if (company && operation) {
+        if (operation === 'compra') {
+            if (company === 'filial_es') {
+                results = findCompraTesCodes('filial_es');
+            }
+            // Logic for Matriz compra can be added here
+        } else if (operation === 'venda' && salePurpose && saleType) {
+            results = findVendaTesCodes(company, salePurpose, saleType, hasSuframa);
+        }
     }
-    // Placeholder for other search logic
+    
+    if (results) {
+      setTesResults(results);
+      setShowResults(true);
+    }
   };
 
   const handleReset = () => {
@@ -84,12 +94,21 @@ export default function PesquisaTesPage() {
     if (operation === "venda") {
       if (!salePurpose) return true;
       if (!saleType) return true;
-      if (saleType === "zfm" && hasSuframa === null) return true;
+      if (saleType === "zfm" && salePurpose === 'revenda' && hasSuframa === null) return true;
     }
     if (company === 'matriz' && operation === "compra") {
         if (hasSt === null) return true;
     }
-    return false;
+    // Enable search for Filial ES Compra
+    if (company === 'filial_es' && operation === 'compra') return false;
+
+    // Enable search for ZFM flows
+    if (operation === 'venda' && saleType === 'zfm') {
+        if (salePurpose === 'consumo') return false;
+        if (salePurpose === 'revenda' && hasSuframa !== null) return false;
+    }
+
+    return true;
   })();
 
   if (showResults) {
@@ -97,7 +116,8 @@ export default function PesquisaTesPage() {
        <>
         <Header />
         <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Resultado da Pesquisa</h2>
                 <Button variant="outline" onClick={handleReset}>
                     <RotateCw className="mr-2 h-4 w-4" />
                     Nova Pesquisa
@@ -105,8 +125,6 @@ export default function PesquisaTesPage() {
             </div>
             <TesResults
                 results={tesResults}
-                title="Resultado da Pesquisa de TES"
-                description={`Exibindo resultados para ${company === 'filial_es' ? 'Filial ES' : 'Matriz'} - ${operation === 'compra' ? 'Compra' : 'Venda'}`}
             />
         </main>
       </>
@@ -226,7 +244,7 @@ export default function PesquisaTesPage() {
                 </div>
             )}
 
-            {saleType === 'zfm' && (
+            {operation === 'venda' && salePurpose === 'revenda' && saleType === 'zfm' && (
                  <div className="space-y-4">
                     <h3 className="flex items-center gap-2 font-semibold text-lg">
                         <Anchor className="h-5 w-5 text-primary" />

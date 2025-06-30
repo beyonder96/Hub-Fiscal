@@ -177,6 +177,9 @@ export interface ValidationHistoryItem {
 }
 
 // --- TES Search Definitions ---
+export type Company = "matriz" | "filial_es";
+export type SalePurpose = "revenda" | "consumo";
+
 export interface TesCode {
   code: string;
   calculaIcms: boolean;

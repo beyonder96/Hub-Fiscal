@@ -1,20 +1,31 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { TesCode } from "@/lib/definitions";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, SearchX, XCircle } from "lucide-react";
 
 interface TesResultsProps {
   results: TesCode[];
-  title: string;
-  description: string;
 }
 
-export function TesResults({ results, title, description }: TesResultsProps) {
+export function TesResults({ results }: TesResultsProps) {
+  if (results.length === 0) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto shadow-lg border border-dashed">
+        <CardContent className="p-10 text-center">
+            <SearchX className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold">Nenhum TES Encontrado</h3>
+            <p className="text-muted-foreground mt-2">
+                Não encontramos um código TES para os critérios selecionados. Por favor, tente uma nova pesquisa.
+            </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-lg border">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardTitle>Códigos TES Encontrados</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {results.map((tes) => (
