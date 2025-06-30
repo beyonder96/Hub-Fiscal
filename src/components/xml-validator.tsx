@@ -51,6 +51,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
       item: det.getAttribute('nItem') || 'N/A',
       cProd: getTagValue(prod, 'cProd'),
       xProd: getTagValue(prod, 'xProd'),
+      ncm: getTagValue(prod, 'NCM'),
       cfop: getTagValue(prod, 'CFOP'),
       cst: `${orig || ''}${cstNum || ''}`,
       vProd: getTagValue(prod, 'vProd'),
@@ -647,6 +648,7 @@ export function XmlValidator() {
                                           <TableHeader>
                                               <TableRow>
                                                   <TableHead>Item</TableHead>
+                                                  <TableHead>NCM</TableHead>
                                                   <TableHead>CST</TableHead>
                                                   <TableHead>CFOP</TableHead>
                                                   <TableHead>Frete</TableHead>
@@ -660,6 +662,7 @@ export function XmlValidator() {
                                               {result.nfeData?.products.map(p => (
                                                   <TableRow key={p.item}>
                                                       <TableCell className="font-medium max-w-xs truncate" title={p.xProd}>{p.xProd}</TableCell>
+                                                      <TableCell>{p.ncm || 'N/A'}</TableCell>
                                                       <TableCell>{p.cst}</TableCell>
                                                       <TableCell>{p.cfop}</TableCell>
                                                       <TableCell>R$ {p.vFrete || '0.00'}</TableCell>

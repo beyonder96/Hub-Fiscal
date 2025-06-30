@@ -79,6 +79,7 @@ export interface NfeProductData {
     item: string;
     cProd?: string;
     xProd?: string;
+    ncm?: string;
     cfop?: string;
     cst?: string; // combined
     vProd?: string;
