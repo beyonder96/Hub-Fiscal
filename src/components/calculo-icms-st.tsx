@@ -63,22 +63,21 @@ export default function CalculoIcmsSt() {
     const aliqIcmsSt = parseLocaleString(data.aliqIcmsSt);
     const redBaseSt = parseLocaleString(data.redBaseSt || "0");
 
-    // Round intermediate tax values, as is common in fiscal systems
-    const valorIpi = parseFloat((valorMercadoria * (aliqIpi / 100)).toFixed(2));
-    const baseIcms = valorMercadoria;
-    const valorIcms = parseFloat((baseIcms * (aliqIcms / 100)).toFixed(2));
+    const baseIpi = valorMercadoria + valorFrete;
+    const valorIpi = parseFloat((baseIpi * (aliqIpi / 100)).toFixed(2));
+
+    const baseIcmsProprio = valorMercadoria + valorFrete;
+    const valorIcmsProprio = parseFloat((baseIcmsProprio * (aliqIcms / 100)).toFixed(2));
     
     const baseStSemReducao = (valorMercadoria + valorFrete + valorIpi) * (1 + mva / 100);
-    // Round the ST base before using it
     const baseSt = parseFloat((baseStSemReducao * (1 - redBaseSt / 100)).toFixed(2));
     
-    const valorStBruto = (baseSt * (aliqIcmsSt / 100)) - valorIcms;
+    const valorStBruto = (baseSt * (aliqIcmsSt / 100)) - valorIcmsProprio;
     const valorSt = valorStBruto > 0 ? parseFloat(valorStBruto.toFixed(2)) : 0;
 
     const valorTotalNota = valorMercadoria + valorFrete + valorIpi + valorSt;
     
-    // Corrected formula for PIS/COFINS base, including IPI
-    const basePisCofins = valorMercadoria + valorIpi - valorIcms;
+    const basePisCofins = baseIcmsProprio - valorIcmsProprio;
 
     setResult({
       baseSt,
