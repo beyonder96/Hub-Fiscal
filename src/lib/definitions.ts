@@ -193,4 +193,21 @@ export interface TesCode {
   description: string;
 }
 
-    
+// --- ICMS-ST Calculator Definitions ---
+const numericString = (errorMessage: string) => 
+  z.string().min(1, errorMessage).refine(value => {
+    const n = parseFloat(value.replace(/\./g, '').replace(',', '.'));
+    return !isNaN(n);
+  }, { message: "Valor inválido." });
+
+export const icmsStSchema = z.object({
+  valorMercadoria: numericString("Valor da mercadoria é obrigatório."),
+  valorFrete: numericString("Valor inválido.").optional().or(z.literal('')),
+  aliqIpi: numericString("Valor inválido.").optional().or(z.literal('')),
+  aliqIcms: numericString("Alíquota ICMS é obrigatória."),
+  mva: numericString("IVA/MVA é obrigatório."),
+  aliqIcmsSt: numericString("Alíquota ICMS-ST é obrigatória."),
+  redBaseSt: numericString("Valor inválido.").optional().or(z.literal('')),
+});
+
+export type IcmsStFormData = z.infer<typeof icmsStSchema>;
