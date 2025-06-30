@@ -42,7 +42,6 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
     const icms = imposto?.querySelector('ICMS')?.firstElementChild;
     const ipi = imposto?.querySelector('IPI');
     const ipiTrib = ipi?.querySelector('IPITrib');
-    const icmsSt = icms?.tagName === 'ICMSST' ? icms : imposto?.querySelector('ICMS > ICMSST, ICMS > * > ICMSST');
 
     const orig = getTagValue(icms ?? null, 'orig');
     const cstNum = getTagValue(icms ?? null, 'CST') || getTagValue(icms ?? null, 'CSOSN');
@@ -69,10 +68,10 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
         vIPI: getTagValue(ipiTrib, 'vIPI'),
       },
       icmsSt: {
-        vBCST: getTagValue(icmsSt, 'vBCST'),
-        pMVAST: getTagValue(icmsSt, 'pMVAST'),
-        pICMSST: getTagValue(icmsSt, 'pICMSST'),
-        vICMSST: getTagValue(icmsSt, 'vICMSST'),
+        vBCST: getTagValue(icms, 'vBCST'),
+        pMVAST: getTagValue(icms, 'pMVAST'),
+        pICMSST: getTagValue(icms, 'pICMSST'),
+        vICMSST: getTagValue(icms, 'vICMSST'),
       }
     };
   });
@@ -161,10 +160,9 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
 
     let expectedVBC = baseForVBC;
     if (data.emitUf === 'ES' && data.destUf === 'ES') {
-         const pRedBC = parseFloat(data.products[0]?.icms.pRedBC || '0') / 100;
-         if (pRedBC > 0) {
-            expectedVBC = baseForVBC * (1 - pRedBC);
-         }
+         // 58.82% reduction -> multiply by (1 - 0.5882) = 0.4118
+         const pRedBC = 0.5882;
+         expectedVBC = baseForVBC * (1 - pRedBC);
     }
     
     if (!isNaN(actualVBC)) {
@@ -206,44 +204,48 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
       }
     }
 
-    // vBCST and vICMSST Validation for ES operations
-    if (data.emitUf === 'ES' && data.destUf === 'ES') {
-        validations.vBCST = { check: 'valid', message: 'ICMS-ST não aplicável para operações internas no ES.' };
-        validations.vICMSST = { check: 'valid', message: 'ICMS-ST não aplicável para operações internas no ES.' };
-        return validations;
-    }
-
+    // vBCST and vICMSST Validation
     const actualTotalVBCST = parseFloat(data.total.vBCST || '0');
     const actualTotalVICMSST = parseFloat(data.total.vICMSST || '0');
-    
-    const { expectedVBCST, expectedVICMSST } = data.products.reduce((acc, p) => {
-        const vProd_item = parseFloat(p.vProd || '0');
-        const vFrete_item = parseFloat(p.vFrete || '0');
-        const vIPI_item = parseFloat(p.ipi.vIPI || '0');
-        const pMVAST_item = parseFloat(p.icmsSt.pMVAST || '0');
-        const pICMSST_item = parseFloat(p.icmsSt.pICMSST || '0');
-        const vICMS_item = parseFloat(p.icms.vICMS || '0');
 
-        const baseST = vProd_item + vFrete_item + vIPI_item;
-        const vbcst_item = baseST * (1 + (pMVAST_item / 100));
-        const vicmsst_item = (vbcst_item * (pICMSST_item / 100)) - vICMS_item;
+    if (data.emitUf === 'ES' && data.destUf === 'ES') {
+        const stIsValid = Math.abs(actualTotalVBCST) < tolerance && Math.abs(actualTotalVICMSST) < tolerance;
+        if (stIsValid) {
+            validations.vBCST = { check: 'valid', message: 'ICMS-ST não aplicável e zerado corretamente para operações internas no ES.' };
+            validations.vICMSST = { check: 'valid', message: 'ICMS-ST não aplicável e zerado corretamente para operações internas no ES.' };
+        } else {
+            validations.vBCST = { check: 'divergent', message: `ICMS-ST deve ser zero para operações internas no ES, mas o total vBCST encontrado foi R$ ${actualTotalVBCST.toFixed(2)}.` };
+            validations.vICMSST = { check: 'divergent', message: `ICMS-ST deve ser zero para operações internas no ES, mas o total vICMSST encontrado foi R$ ${actualTotalVICMSST.toFixed(2)}.` };
+        }
+    } else {
+        const { expectedVBCST, expectedVICMSST } = data.products.reduce((acc, p) => {
+            const vProd_item = parseFloat(p.vProd || '0');
+            const vFrete_item = parseFloat(p.vFrete || '0');
+            const vIPI_item = parseFloat(p.ipi.vIPI || '0');
+            const pMVAST_item = parseFloat(p.icmsSt.pMVAST || '0');
+            const pICMSST_item = parseFloat(p.icmsSt.pICMSST || '0');
+            const vICMS_item = parseFloat(p.icms.vICMS || '0');
 
-        acc.expectedVBCST += vbcst_item > 0 ? vbcst_item : 0;
-        acc.expectedVICMSST += vicmsst_item > 0 ? vicmsst_item : 0;
-        return acc;
-    }, { expectedVBCST: 0, expectedVICMSST: 0 });
+            if (pMVAST_item > 0 || pICMSST_item > 0) {
+                const baseST = vProd_item + vFrete_item + vIPI_item;
+                const vbcst_item = baseST * (1 + (pMVAST_item / 100));
+                const vicmsst_item = (vbcst_item * (pICMSST_item / 100)) - vICMS_item;
+                acc.expectedVBCST += vbcst_item > 0 ? vbcst_item : 0;
+                acc.expectedVICMSST += vicmsst_item > 0 ? vicmsst_item : 0;
+            }
+            return acc;
+        }, { expectedVBCST: 0, expectedVICMSST: 0 });
 
-    if (!isNaN(actualTotalVBCST) && expectedVBCST > 0) {
+        // vBCST validation
         if (Math.abs(expectedVBCST - actualTotalVBCST) < tolerance) {
             validations.vBCST = { check: 'valid', message: `Base de Cálculo ST (R$ ${actualTotalVBCST.toFixed(2)}) validada.` };
         } else {
-            validations.vBCST = { check: 'divergent', message: `Soma do vBCST calculado (R$ ${expectedVBCST.toFixed(2)}) diverge do total (R$ ${actualTotalVBCST.toFixed(2)}).` };
+            validations.vBCST = { check: 'divergent', message: `Base de Cálculo ST divergente. Esperado: R$ ${expectedVBCST.toFixed(2)}, Encontrado: R$ ${actualTotalVBCST.toFixed(2)}.` };
         }
-    }
-    
-    if (!isNaN(actualTotalVICMSST) && expectedVICMSST > 0) {
+        
+        // vICMSST validation
         if (Math.abs(expectedVICMSST - actualTotalVICMSST) < tolerance) {
-            validations.vICMSST = { check: 'valid', message: `Valor do ICMS-ST (R$ ${actualTotalVICMSST.toFixed(2)}) validada.` };
+            validations.vICMSST = { check: 'valid', message: `Valor do ICMS-ST (R$ ${actualTotalVICMSST.toFixed(2)}) validado.` };
         } else {
             validations.vICMSST = { check: 'divergent', message: `Soma do vICMSST calculado (R$ ${expectedVICMSST.toFixed(2)}) diverge do total (R$ ${actualTotalVICMSST.toFixed(2)}).` };
         }
@@ -755,3 +757,5 @@ export function XmlValidator() {
     </Card>
   );
 }
+
+    
