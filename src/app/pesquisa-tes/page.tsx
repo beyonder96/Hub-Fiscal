@@ -8,18 +8,20 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck, RotateCw } from "lucide-react";
+import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck, RotateCw, ClipboardList } from "lucide-react";
 import type { TesCode } from "@/lib/definitions";
 import { findTesCodes } from "@/lib/tes-data";
 import { TesResults } from "@/components/tes-results";
 
 type Company = "matriz" | "filial_es";
 type Operation = "compra" | "venda";
+type SalePurpose = "revenda" | "consumo";
 type SaleType = "normal" | "zfm";
 
 export default function PesquisaTesPage() {
   const [company, setCompany] = useState<Company | null>(null);
   const [operation, setOperation] = useState<Operation | null>(null);
+  const [salePurpose, setSalePurpose] = useState<SalePurpose | null>(null);
   const [saleType, setSaleType] = useState<SaleType | null>(null);
   const [hasSuframa, setHasSuframa] = useState<boolean | null>(null);
   const [hasSt, setHasSt] = useState<boolean | null>(null);
@@ -30,6 +32,7 @@ export default function PesquisaTesPage() {
   const handleCompanyChange = (value: Company) => {
     setCompany(value);
     setOperation(null);
+    setSalePurpose(null);
     setSaleType(null);
     setHasSuframa(null);
     setHasSt(null);
@@ -37,9 +40,16 @@ export default function PesquisaTesPage() {
 
   const handleOperationChange = (value: Operation) => {
     setOperation(value);
+    setSalePurpose(null);
     setSaleType(null);
     setHasSuframa(null);
     setHasSt(null);
+  };
+
+  const handleSalePurposeChange = (value: SalePurpose) => {
+    setSalePurpose(value);
+    setSaleType(null);
+    setHasSuframa(null);
   };
 
   const handleSaleTypeChange = (value: SaleType) => {
@@ -61,6 +71,7 @@ export default function PesquisaTesPage() {
   const handleReset = () => {
     setCompany(null);
     setOperation(null);
+    setSalePurpose(null);
     setSaleType(null);
     setHasSuframa(null);
     setHasSt(null);
@@ -71,6 +82,7 @@ export default function PesquisaTesPage() {
   const isSearchDisabled = (() => {
     if (!company || !operation) return true;
     if (operation === "venda") {
+      if (!salePurpose) return true;
       if (!saleType) return true;
       if (saleType === "zfm" && hasSuframa === null) return true;
     }
@@ -118,16 +130,16 @@ export default function PesquisaTesPage() {
         </div>
         <Card className="max-w-2xl mx-auto shadow-lg border">
           <CardHeader>
-            <CardTitle>Passo 1: Seleção Inicial</CardTitle>
+            <CardTitle>Passo a Passo: Seleção de Critérios</CardTitle>
             <CardDescription>
-              Defina a empresa e a operação para encontrar o TES correto.
+              Defina os critérios para encontrar o TES correto para sua operação.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             <div className="space-y-4">
                 <h3 className="flex items-center gap-2 font-semibold text-lg">
                     <Building className="h-5 w-5 text-primary" />
-                    Qual a empresa?
+                    1. Qual a empresa?
                 </h3>
                 <RadioGroup 
                     onValueChange={(value) => handleCompanyChange(value as Company)} 
@@ -149,7 +161,7 @@ export default function PesquisaTesPage() {
                  <div className="space-y-4">
                     <h3 className="flex items-center gap-2 font-semibold text-lg">
                         <ShoppingCart className="h-5 w-5 text-primary" />
-                        Qual a operação?
+                        2. Qual a operação?
                     </h3>
                     <RadioGroup 
                         onValueChange={(value) => handleOperationChange(value as Operation)} 
@@ -171,8 +183,31 @@ export default function PesquisaTesPage() {
             {operation === 'venda' && (
                  <div className="space-y-4">
                     <h3 className="flex items-center gap-2 font-semibold text-lg">
+                        <ClipboardList className="h-5 w-5 text-primary" />
+                        3. Qual a finalidade?
+                    </h3>
+                    <RadioGroup 
+                        onValueChange={(value) => handleSalePurposeChange(value as SalePurpose)} 
+                        value={salePurpose ?? ""}
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    >
+                        <Label htmlFor="revenda" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                             <RadioGroupItem value="revenda" id="revenda" className="sr-only" />
+                             <span className="text-base font-semibold">Para Revenda</span>
+                        </Label>
+                        <Label htmlFor="consumo" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                            <RadioGroupItem value="consumo" id="consumo" className="sr-only" />
+                            <span className="text-base font-semibold">Para Consumo</span>
+                        </Label>
+                    </RadioGroup>
+                </div>
+            )}
+
+            {operation === 'venda' && salePurpose && (
+                 <div className="space-y-4">
+                    <h3 className="flex items-center gap-2 font-semibold text-lg">
                         <Package className="h-5 w-5 text-primary" />
-                        Qual o tipo de venda?
+                        4. Qual o tipo de venda?
                     </h3>
                     <RadioGroup 
                         onValueChange={(value) => handleSaleTypeChange(value as SaleType)} 
@@ -195,7 +230,7 @@ export default function PesquisaTesPage() {
                  <div className="space-y-4">
                     <h3 className="flex items-center gap-2 font-semibold text-lg">
                         <Anchor className="h-5 w-5 text-primary" />
-                        Possui SUFRAMA?
+                        5. Possui SUFRAMA?
                     </h3>
                     <RadioGroup 
                         onValueChange={(value) => setHasSuframa(value === 'true')} 
@@ -218,7 +253,7 @@ export default function PesquisaTesPage() {
               <div className="space-y-4">
                 <h3 className="flex items-center gap-2 font-semibold text-lg">
                   <ShieldCheck className="h-5 w-5 text-primary" />
-                  <span>Possui ST (Substituição Tributária)?</span>
+                  <span>3. Possui ST (Substituição Tributária)?</span>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
