@@ -13,11 +13,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { FileCode, Upload, CheckCircle2, XCircle, AlertTriangle, FileDown, Trash2, History, Info } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 const MAX_HISTORY_ITEMS = 15;
 const MAX_FILES = 15;
@@ -113,23 +113,17 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     
     // vBC Validation
     const actualVBC = parseFloat(data.total.vBC || '0');
-    let expectedVBC = totalProd + totalFrete;
+    let baseForVBC = totalProd + totalFrete;
     if (inputType === 'Consumo') {
-        expectedVBC += totalIPI;
-    }
-    // Specific rule for ES -> ES
-    if (data.emitUf === 'ES' && data.destUf === 'ES') {
-        const totalRedBC = data.products.reduce((acc, p) => {
-            const vBC = parseFloat(p.icms.vBC || '0');
-            const pRedBC = parseFloat(p.icms.pRedBC || '0');
-            if (vBC > 0 && pRedBC > 0) {
-                return acc + (vBC * (pRedBC / 100));
-            }
-            return acc;
-        }, 0);
-        expectedVBC -= totalRedBC;
+        baseForVBC += totalIPI;
     }
 
+    let expectedVBC = baseForVBC;
+    // Specific rule for ES -> ES with reduction of 58.82%
+    if (data.emitUf === 'ES' && data.destUf === 'ES') {
+         expectedVBC = baseForVBC * (1 - 0.5882);
+    }
+    
     if (!isNaN(actualVBC)) {
         if (Math.abs(expectedVBC - actualVBC) < tolerance) {
             validations.vBC = { check: 'valid', message: `Base de Cálculo (R$ ${actualVBC.toFixed(2)}) validada.` };
@@ -205,6 +199,12 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
         }
     }
 
+    // Override for ES -> ES operations where ST is not applicable
+    if (data.emitUf === 'ES' && data.destUf === 'ES') {
+        validations.vBCST = { check: 'valid', message: 'ICMS-ST não aplicável para operações internas no ES.' };
+        validations.vICMSST = { check: 'valid', message: 'ICMS-ST não aplicável para operações internas no ES.' };
+    }
+
     return validations;
 }
 
@@ -265,7 +265,7 @@ const ValidationStatusDisplay = ({ validation }: { validation: CalculationValida
     }
     const isDivergent = validation.check === 'divergent';
     return (
-        <div className={`p-3 rounded-lg ${isDivergent ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
+        <div className={`p-3 rounded-lg ${isDivergent ? 'bg-red-500/10 dark:bg-red-500/20' : 'bg-green-500/10 dark:bg-green-500/20'}`}>
             <div className={`flex items-center gap-2 font-bold ${isDivergent ? 'text-red-600 dark:text-red-300' : 'text-green-600 dark:text-green-300'}`}>
                 {isDivergent ? <XCircle className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
                 <span>{isDivergent ? 'Divergente' : 'Validada'}</span>
@@ -452,6 +452,7 @@ export function XmlValidator() {
   const statusMap: Record<string, { icon: React.ElementType, color: string, badge: string, label: string }> = {
     'Validada': { icon: CheckCircle2, color: "text-green-500", badge: "default", label: "Validada"},
     'Divergente': { icon: XCircle, color: "text-destructive", badge: "destructive", label: "Divergente"},
+    'N/A': {icon: Info, color: "text-muted-foreground", badge: "secondary", label: "N/A"}
   };
 
   const formatPercent = (value?: string) => {
@@ -497,140 +498,141 @@ export function XmlValidator() {
           
           <TabsContent value="results" className="mt-4">
             {results.length > 0 ? (
-              <Accordion type="multiple" className="w-full space-y-2">
-                {results.map((result) => {
-                  const hasDivergence = Object.values(result.calculationValidations).some(v => v.check === 'divergent');
-                  const overallStatus = result.status === 'error' ? 'Erro' : hasDivergence ? 'Divergente' : 'Validada';
-                  return (
-                    <AccordionItem value={result.id} key={result.id} className="border-b-0">
-                      <Card className="mb-2">
-                      <AccordionTrigger className="p-4 hover:no-underline">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="truncate font-medium flex-1 text-left">{result.fileName}</span>
-                           <Badge variant={overallStatus === 'Erro' ? 'destructive' : overallStatus === 'Divergente' ? 'secondary' : 'default'} className="ml-auto flex-shrink-0">
-                            {overallStatus}
-                          </Badge>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="p-2 md:p-4 space-y-6 bg-secondary/30 rounded-b-md">
-                        {result.status === 'error' ? (
-                            <Alert variant="destructive">
-                                <AlertTriangle className="h-4 w-4" />
-                                <AlertTitle>{result.messages[0].message}</AlertTitle>
-                                <AlertDescription>{result.messages[0].details}</AlertDescription>
-                            </Alert>
-                        ) : (
-                        <>
-                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                           <div className="space-y-4">
-                               <h4 className="font-semibold text-primary">Informações Gerais</h4>
-                               <div className="grid grid-cols-2 gap-2 text-sm p-3 bg-background/50 rounded-lg border">
-                                    <span className="font-medium text-muted-foreground">Chave</span><span className="truncate">{result.nfeData?.chave || "N/A"}</span>
-                                    <span className="font-medium text-muted-foreground">Nº NFe</span><span>{result.nfeData?.nNf || "N/A"}</span>
-                                    <span className="font-medium text-muted-foreground">Emissão</span><span>{result.nfeData?.dhEmi ? format(new Date(result.nfeData.dhEmi), "dd/MM/yy HH:mm") : 'N/A'}</span>
-                                    <span className="font-medium text-muted-foreground">Frete Total</span><span>R$ {result.nfeData?.vFrete || "0.00"}</span>
-                                    <span className="font-medium text-muted-foreground">Valor Total</span><span className="font-bold">R$ {result.nfeData?.vNF || "0.00"}</span>
-                               </div>
-                           </div>
-                           <div>
-                              <h4 className="font-semibold mb-2 text-primary">Tipo de Entrada da Nota</h4>
-                              <RadioGroup value={result.selectedInputType} onValueChange={(v: NfeInputType) => updateResultInputType(result.id, v)} className="flex gap-4">
-                                {NfeInputTypes.map(type => (
-                                  <div key={type} className="flex items-center space-x-2">
-                                    <RadioGroupItem value={type} id={`${result.id}-${type}`} />
-                                    <Label htmlFor={`${result.id}-${type}`}>{type}</Label>
+              <Carousel className="w-full" opts={{ align: "start" }}>
+                <CarouselContent className="-ml-4">
+                  {results.map((result) => {
+                    const hasDivergence = Object.values(result.calculationValidations).some(v => v.check === 'divergent');
+                    const overallStatus = result.status === 'error' ? 'Erro' : hasDivergence ? 'Divergente' : 'Validada';
+                    return (
+                      <CarouselItem key={result.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                        <div className="h-full">
+                          <Card className="h-full flex flex-col">
+                            <CardHeader>
+                              <div className="flex justify-between items-start gap-2">
+                                <CardTitle className="truncate text-lg">{result.fileName}</CardTitle>
+                                <Badge variant={overallStatus === 'Erro' ? 'destructive' : overallStatus === 'Divergente' ? 'secondary' : 'default'} className="flex-shrink-0">
+                                  {overallStatus}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-6 flex-grow">
+                              {result.status === 'error' ? (
+                                  <Alert variant="destructive" className="h-full">
+                                      <AlertTriangle className="h-4 w-4" />
+                                      <AlertTitle>{result.messages[0].message}</AlertTitle>
+                                      <AlertDescription>{result.messages[0].details}</AlertDescription>
+                                  </Alert>
+                              ) : (
+                              <>
+                              <div className="grid grid-cols-1 gap-4">
+                                  <Card>
+                                      <CardHeader className="p-3"><CardTitle className="text-base">Emitente</CardTitle></CardHeader>
+                                      <CardContent className="p-3 text-sm space-y-1">
+                                          <p className="truncate font-semibold">{result.nfeData?.emitRazaoSocial || "N/A"}</p>
+                                          <p className="text-muted-foreground">CNPJ: {result.nfeData?.emitCnpj || "N/A"}</p>
+                                      </CardContent>
+                                  </Card>
+                                  <Card>
+                                      <CardHeader className="p-3"><CardTitle className="text-base">Destinatário</CardTitle></CardHeader>
+                                      <CardContent className="p-3 text-sm space-y-1">
+                                          <p className="truncate font-semibold">{result.nfeData?.destRazaoSocial || "N/A"}</p>
+                                          <p className="text-muted-foreground">CNPJ: {result.nfeData?.destCnpj || "N/A"}</p>
+                                      </CardContent>
+                                  </Card>
+                                  <div>
+                                    <h4 className="font-semibold mb-2 text-primary">Tipo de Entrada</h4>
+                                    <RadioGroup value={result.selectedInputType} onValueChange={(v: NfeInputType) => updateResultInputType(result.id, v)} className="flex gap-4">
+                                      {NfeInputTypes.map(type => (
+                                        <div key={type} className="flex items-center space-x-2">
+                                          <RadioGroupItem value={type} id={`${result.id}-${type}`} />
+                                          <Label htmlFor={`${result.id}-${type}`}>{type}</Label>
+                                        </div>
+                                      ))}
+                                    </RadioGroup>
                                   </div>
-                                ))}
-                              </RadioGroup>
-                           </div>
-                        </div>
+                              </div>
 
-                        <Tabs defaultValue="fiscal">
-                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="fiscal">Dados Fiscais</TabsTrigger>
-                                <TabsTrigger value="products">Produtos ({result.nfeData?.products.length})</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="fiscal" className="mt-4 space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <Card>
-                                        <CardHeader><CardTitle>Tributos ICMS</CardTitle></CardHeader>
-                                        <CardContent className="space-y-2">
-                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Base de Cálculo: </span>R$ {result.nfeData?.total.vBC || '0.00'}</div>
-                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Valor ICMS: </span>R$ {result.nfeData?.total.vICMS || '0.00'}</div>
-                                            <ValidationStatusDisplay validation={result.calculationValidations.vBC} />
-                                            <ValidationStatusDisplay validation={result.calculationValidations.vICMS} />
-                                        </CardContent>
-                                    </Card>
-                                    <Card>
-                                        <CardHeader><CardTitle>Tributos IPI</CardTitle></CardHeader>
-                                        <CardContent className="space-y-2">
-                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Alíquota IPI: </span>{formatPercent(result.nfeData?.products[0]?.ipi.pIPI)}</div>
-                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Valor IPI: </span>R$ {result.nfeData?.total.vIPI || '0.00'}</div>
-                                            <ValidationStatusDisplay validation={result.calculationValidations.vIPI} />
-                                        </CardContent>
-                                    </Card>
-                                     <Card>
-                                        <CardHeader><CardTitle>Tributos ICMS-ST</CardTitle></CardHeader>
-                                        <CardContent className="space-y-2">
-                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Base Cálculo ST: </span>R$ {result.nfeData?.total.vBCST || '0.00'}</div>
-                                            <div className="text-sm"><span className="font-semibold text-muted-foreground">Valor ICMS-ST: </span>R$ {result.nfeData?.total.vST || '0.00'}</div>
-                                            <ValidationStatusDisplay validation={result.calculationValidations.vBCST} />
-                                            <ValidationStatusDisplay validation={result.calculationValidations.vICMSST} />
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            </TabsContent>
-                             <TabsContent value="products" className="mt-4">
-                                <div className="rounded-md border overflow-x-auto bg-background/50">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Item</TableHead>
-                                            <TableHead>CST</TableHead>
-                                            <TableHead>CFOP</TableHead>
-                                            <TableHead>Frete</TableHead>
-                                            <TableHead>Base ICMS</TableHead>
-                                            <TableHead>Alíq. ICMS</TableHead>
-                                            <TableHead>Valor ICMS</TableHead>
-                                            <TableHead>Base IPI</TableHead>
-                                            <TableHead>Alíq. IPI</TableHead>
-                                            <TableHead>Valor IPI</TableHead>
-                                            <TableHead>Base ICMS-ST</TableHead>
-                                            <TableHead>MVA-ST</TableHead>
-                                            <TableHead>Valor ICMS-ST</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {result.nfeData?.products.map(p => (
-                                            <TableRow key={p.item}>
-                                                <TableCell className="font-medium max-w-xs truncate">{p.xProd}</TableCell>
-                                                <TableCell>{p.cst}</TableCell>
-                                                <TableCell>{p.cfop}</TableCell>
-                                                <TableCell>R$ {p.vFrete || '0.00'}</TableCell>
-                                                <TableCell>R$ {p.icms.vBC || '0.00'}</TableCell>
-                                                <TableCell>{formatPercent(p.icms.pICMS)}</TableCell>
-                                                <TableCell>R$ {p.icms.vICMS || '0.00'}</TableCell>
-                                                <TableCell>R$ {p.ipi.vBC || '0.00'}</TableCell>
-                                                <TableCell>{formatPercent(p.ipi.pIPI)}</TableCell>
-                                                <TableCell>R$ {p.ipi.vIPI || '0.00'}</TableCell>
-                                                <TableCell>R$ {p.icmsSt.vBCST || '0.00'}</TableCell>
-                                                <TableCell>{formatPercent(p.icmsSt.pMVAST)}</TableCell>
-                                                <TableCell>R$ {p.icmsSt.vICMSST || '0.00'}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                        </>
-                        )}
-                      </AccordionContent>
-                      </Card>
-                    </AccordionItem>
-                  )
-                })}
-              </Accordion>
+                              <Tabs defaultValue="fiscal">
+                                  <TabsList className="grid w-full grid-cols-2">
+                                      <TabsTrigger value="fiscal">Dados Fiscais</TabsTrigger>
+                                      <TabsTrigger value="products">Produtos ({result.nfeData?.products.length})</TabsTrigger>
+                                  </TabsList>
+                                  <TabsContent value="fiscal" className="mt-4 space-y-4">
+                                      <Card>
+                                          <CardHeader><CardTitle>Geral</CardTitle></CardHeader>
+                                          <CardContent className="space-y-2 text-sm">
+                                            <div className="flex justify-between"><span className="text-muted-foreground">Nº NFe:</span><span className="font-medium">{result.nfeData?.nNf || "N/A"}</span></div>
+                                            <div className="flex justify-between"><span className="text-muted-foreground">Emissão:</span><span className="font-medium">{result.nfeData?.dhEmi ? format(new Date(result.nfeData.dhEmi), "dd/MM/yy HH:mm") : 'N/A'}</span></div>
+                                            <div className="flex justify-between"><span className="text-muted-foreground">Frete Total:</span><span className="font-medium">R$ {result.nfeData?.vFrete || "0.00"}</span></div>
+                                            <div className="flex justify-between"><span className="text-muted-foreground">Valor Total:</span><span className="font-bold text-base text-primary">R$ {result.nfeData?.vNF || "0.00"}</span></div>
+                                          </CardContent>
+                                      </Card>
+                                      <Card>
+                                          <CardHeader><CardTitle>Tributos ICMS</CardTitle></CardHeader>
+                                          <CardContent className="space-y-2">
+                                              <ValidationStatusDisplay validation={result.calculationValidations.vBC} />
+                                              <ValidationStatusDisplay validation={result.calculationValidations.vICMS} />
+                                          </CardContent>
+                                      </Card>
+                                      <Card>
+                                          <CardHeader><CardTitle>Tributos IPI</CardTitle></CardHeader>
+                                          <CardContent className="space-y-2">
+                                              <ValidationStatusDisplay validation={result.calculationValidations.vIPI} />
+                                          </CardContent>
+                                      </Card>
+                                      <Card>
+                                          <CardHeader><CardTitle>Tributos ICMS-ST</CardTitle></CardHeader>
+                                          <CardContent className="space-y-2">
+                                              <ValidationStatusDisplay validation={result.calculationValidations.vBCST} />
+                                              <ValidationStatusDisplay validation={result.calculationValidations.vICMSST} />
+                                          </CardContent>
+                                      </Card>
+                                  </TabsContent>
+                                  <TabsContent value="products" className="mt-4">
+                                      <div className="rounded-md border overflow-x-auto bg-background/50">
+                                      <Table>
+                                          <TableHeader>
+                                              <TableRow>
+                                                  <TableHead>Item</TableHead>
+                                                  <TableHead>CST</TableHead>
+                                                  <TableHead>CFOP</TableHead>
+                                                  <TableHead>Frete</TableHead>
+                                                  <TableHead>Vl. ICMS</TableHead>
+                                                  <TableHead>Vl. IPI</TableHead>
+                                                  <TableHead>MVA-ST</TableHead>
+                                                  <TableHead>Vl. ICMS-ST</TableHead>
+                                              </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                              {result.nfeData?.products.map(p => (
+                                                  <TableRow key={p.item}>
+                                                      <TableCell className="font-medium max-w-xs truncate" title={p.xProd}>{p.xProd}</TableCell>
+                                                      <TableCell>{p.cst}</TableCell>
+                                                      <TableCell>{p.cfop}</TableCell>
+                                                      <TableCell>R$ {p.vFrete || '0.00'}</TableCell>
+                                                      <TableCell>R$ {p.icms.vICMS || '0.00'}</TableCell>
+                                                      <TableCell>R$ {p.ipi.vIPI || '0.00'}</TableCell>
+                                                      <TableCell>{formatPercent(p.icmsSt.pMVAST)}</TableCell>
+                                                      <TableCell>R$ {p.icmsSt.vICMSST || '0.00'}</TableCell>
+                                                  </TableRow>
+                                              ))}
+                                          </TableBody>
+                                      </Table>
+                                      </div>
+                                  </TabsContent>
+                              </Tabs>
+                              </>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </CarouselItem>
+                    )
+                  })}
+                </CarouselContent>
+                <CarouselPrevious className="absolute left-[-20px] top-1/2 -translate-y-1/2" />
+                <CarouselNext className="absolute right-[-20px] top-1/2 -translate-y-1/2" />
+              </Carousel>
             ) : (
               <div className="text-center text-muted-foreground p-8">
                 <p>Nenhum arquivo validado ainda.</p>
@@ -657,7 +659,7 @@ export function XmlValidator() {
                 </TableHeader>
                 <TableBody>
                   {history.length > 0 ? history.map(item => {
-                        const status = statusMap[item.overallValidation] || { badge: 'secondary', label: 'N/A' };
+                        const status = statusMap[item.overallValidation] || statusMap['N/A'];
                         return (
                             <TableRow key={item.id}>
                               <TableCell className="font-medium truncate max-w-xs">{item.fileName}</TableCell>
@@ -697,5 +699,3 @@ export function XmlValidator() {
     </Card>
   );
 }
-
-    
