@@ -42,15 +42,15 @@
   }
 
   .dark {
-    /* Dark Glassmorphism Theme */
+    /* Dark Glassmorphism Theme - Refined for Liquid Glass */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
-    /* Translucent Elements */
-    --card-bg: 222.2 84% 4.9% / 0.35;
-    --popover-bg: 222.2 84% 4.9% / 0.5;
-    --secondary-bg: 217.2 32.6% 17.5% / 0.4;
-    --muted-bg: 217.2 32.6% 17.5% / 0.5;
+    /* Translucent Elements - Light glass on dark bg */
+    --card-bg: 210 20% 98% / 0.05;
+    --popover-bg: 210 20% 96% / 0.1;
+    --secondary-bg: 210 20% 90% / 0.05;
+    --muted-bg: 210 20% 90% / 0.1;
 
     --card: var(--card-bg);
     --card-foreground: 210 40% 98%;
@@ -72,8 +72,8 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 217.2 32.6% 17.5% / 0.3;
-    --input: 217.2 32.6% 17.5% / 0.4;
+    --border: 210 40% 98% / 0.1;
+    --input: 210 40% 98% / 0.15;
     --ring: 262.1 83.3% 57.8%;
   }
 }
