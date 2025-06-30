@@ -107,16 +107,30 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     
     const tolerance = 0.02;
 
-    // vBC
     const totalProd = data.products.reduce((acc, p) => acc + parseFloat(p.vProd || '0'), 0);
-    const totalFrete = parseFloat(data.vFrete || '0');
-    const totalIPI = parseFloat(data.total.vIPI || '0');
+    const totalFrete = data.products.reduce((acc, p) => acc + parseFloat(p.vFrete || '0'), 0);
+    const totalIPI = data.products.reduce((acc, p) => acc + parseFloat(p.ipi.vIPI || '0'), 0);
+    
+    // vBC Validation
+    const actualVBC = parseFloat(data.total.vBC || '0');
     let expectedVBC = totalProd + totalFrete;
     if (inputType === 'Consumo') {
         expectedVBC += totalIPI;
     }
-    const actualVBC = parseFloat(data.total.vBC || '0');
-    if (!isNaN(actualVBC) && !isNaN(expectedVBC)) {
+    // Specific rule for ES -> ES
+    if (data.emitUf === 'ES' && data.destUf === 'ES') {
+        const totalRedBC = data.products.reduce((acc, p) => {
+            const vBC = parseFloat(p.icms.vBC || '0');
+            const pRedBC = parseFloat(p.icms.pRedBC || '0');
+            if (vBC > 0 && pRedBC > 0) {
+                return acc + (vBC * (pRedBC / 100));
+            }
+            return acc;
+        }, 0);
+        expectedVBC -= totalRedBC;
+    }
+
+    if (!isNaN(actualVBC)) {
         if (Math.abs(expectedVBC - actualVBC) < tolerance) {
             validations.vBC = { check: 'valid', message: `Base de Cálculo (R$ ${actualVBC.toFixed(2)}) validada.` };
         } else {
@@ -124,46 +138,70 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
         }
     }
 
-    // vICMS
-    const sumProductVIcms = data.products.reduce((acc, p) => acc + parseFloat(p.icms.vICMS || '0'), 0);
+    // vICMS Validation
     const actualTotalVIcms = parseFloat(data.total.vICMS || '0');
-    if (!isNaN(actualTotalVIcms) && sumProductVIcms > 0) {
-        if (Math.abs(sumProductVIcms - actualTotalVIcms) < tolerance) {
+    const expectedVIcms = data.products.reduce((acc, p) => {
+        const vBC_item = parseFloat(p.icms.vBC || '0');
+        const pICMS_item = parseFloat(p.icms.pICMS || '0');
+        return acc + (vBC_item * (pICMS_item / 100));
+    }, 0);
+    if (!isNaN(actualTotalVIcms)) {
+        if (Math.abs(expectedVIcms - actualTotalVIcms) < tolerance) {
             validations.vICMS = { check: 'valid', message: `Valor do ICMS (R$ ${actualTotalVIcms.toFixed(2)}) validado.` };
         } else {
-            validations.vICMS = { check: 'divergent', message: `Soma do vICMS dos produtos (R$ ${sumProductVIcms.toFixed(2)}) diverge do total (R$ ${actualTotalVIcms.toFixed(2)}).` };
+            validations.vICMS = { check: 'divergent', message: `Soma do vICMS calculado dos produtos (R$ ${expectedVIcms.toFixed(2)}) diverge do total (R$ ${actualTotalVIcms.toFixed(2)}).` };
         }
     }
     
-    // vIPI
-    const sumProductVIpi = data.products.reduce((acc, p) => acc + parseFloat(p.ipi.vIPI || '0'), 0);
+    // vIPI Validation
     const actualTotalVIpi = parseFloat(data.total.vIPI || '0');
-    if (!isNaN(actualTotalVIpi) && sumProductVIpi > 0) {
-      if (Math.abs(sumProductVIpi - actualTotalVIpi) < tolerance) {
+    const expectedVIpi = data.products.reduce((acc, p) => {
+        const vBC_ipi_item = parseFloat(p.ipi.vBC || '0');
+        const pIPI_item = parseFloat(p.ipi.pIPI || '0');
+        return acc + (vBC_ipi_item * (pIPI_item / 100));
+    }, 0);
+
+    if (!isNaN(actualTotalVIpi) && expectedVIpi > 0) {
+      if (Math.abs(expectedVIpi - actualTotalVIpi) < tolerance) {
         validations.vIPI = { check: 'valid', message: `Valor do IPI (R$ ${actualTotalVIpi.toFixed(2)}) validado.` };
       } else {
-        validations.vIPI = { check: 'divergent', message: `Soma do vIPI dos produtos (R$ ${sumProductVIpi.toFixed(2)}) diverge do total (R$ ${actualTotalVIpi.toFixed(2)}).` };
+        validations.vIPI = { check: 'divergent', message: `Soma do vIPI calculado dos produtos (R$ ${expectedVIpi.toFixed(2)}) diverge do total (R$ ${actualTotalVIpi.toFixed(2)}).` };
       }
     }
 
-    // vBCST and vICMSST
-    const sumProductVBCST = data.products.reduce((acc, p) => acc + parseFloat(p.icmsSt.vBCST || '0'), 0);
+    // vBCST and vICMSST Validation
     const actualTotalVBCST = parseFloat(data.total.vBCST || '0');
-     if (!isNaN(actualTotalVBCST) && sumProductVBCST > 0) {
-        if (Math.abs(sumProductVBCST - actualTotalVBCST) < tolerance) {
+    const actualTotalVICMSST = parseFloat(data.total.vST || '0');
+    
+    const { expectedVBCST, expectedVICMSST } = data.products.reduce((acc, p) => {
+        const vBC_item = parseFloat(p.icms.vBC || '0');
+        const vIPI_item = parseFloat(p.ipi.vIPI || '0');
+        const pMVAST_item = parseFloat(p.icmsSt.pMVAST || '0');
+        const pICMSST_item = parseFloat(p.icmsSt.pICMSST || '0');
+        const vICMS_item = parseFloat(p.icms.vICMS || '0');
+
+        const baseST = vBC_item + vIPI_item;
+        const vbcst_item = baseST * (1 + (pMVAST_item / 100));
+        const vicmsst_item = (vbcst_item * (pICMSST_item / 100)) - vICMS_item;
+
+        acc.expectedVBCST += vbcst_item > 0 ? vbcst_item : 0;
+        acc.expectedVICMSST += vicmsst_item > 0 ? vicmsst_item : 0;
+        return acc;
+    }, { expectedVBCST: 0, expectedVICMSST: 0 });
+
+    if (!isNaN(actualTotalVBCST) && expectedVBCST > 0) {
+        if (Math.abs(expectedVBCST - actualTotalVBCST) < tolerance) {
             validations.vBCST = { check: 'valid', message: `Base de Cálculo ST (R$ ${actualTotalVBCST.toFixed(2)}) validada.` };
         } else {
-            validations.vBCST = { check: 'divergent', message: `Soma do vBCST dos produtos (R$ ${sumProductVBCST.toFixed(2)}) diverge do total (R$ ${actualTotalVBCST.toFixed(2)}).` };
+            validations.vBCST = { check: 'divergent', message: `Soma do vBCST calculado (R$ ${expectedVBCST.toFixed(2)}) diverge do total (R$ ${actualTotalVBCST.toFixed(2)}).` };
         }
     }
     
-    const sumProductVICMSST = data.products.reduce((acc, p) => acc + parseFloat(p.icmsSt.vICMSST || '0'), 0);
-    const actualTotalVICMSST = parseFloat(data.total.vST || '0');
-     if (!isNaN(actualTotalVICMSST) && sumProductVICMSST > 0) {
-        if (Math.abs(sumProductVICMSST - actualTotalVICMSST) < tolerance) {
+    if (!isNaN(actualTotalVICMSST) && expectedVICMSST > 0) {
+        if (Math.abs(expectedVICMSST - actualTotalVICMSST) < tolerance) {
             validations.vICMSST = { check: 'valid', message: `Valor do ICMS-ST (R$ ${actualTotalVICMSST.toFixed(2)}) validado.` };
         } else {
-            validations.vICMSST = { check: 'divergent', message: `Soma do vICMSST dos produtos (R$ ${sumProductVICMSST.toFixed(2)}) diverge do total (R$ ${actualTotalVICMSST.toFixed(2)}).` };
+            validations.vICMSST = { check: 'divergent', message: `Soma do vICMSST calculado (R$ ${expectedVICMSST.toFixed(2)}) diverge do total (R$ ${actualTotalVICMSST.toFixed(2)}).` };
         }
     }
 
@@ -210,7 +248,6 @@ const processNfeFile = (xmlString: string, fileName: string, inputType: NfeInput
     const nfeData = parseNfeXml(xmlDoc, fileName);
     const calculationValidations = runValidations(nfeData, inputType);
     
-    // Simple structural message for now
     const messages: ValidationMessage[] = [{ type: 'success', message: 'Arquivo XML lido com sucesso.' }];
 
     return {
@@ -249,7 +286,6 @@ export function XmlValidator() {
       const storedHistory = localStorage.getItem("xmlValidationHistory");
       if (storedHistory) {
         const parsedHistory = JSON.parse(storedHistory);
-        // Basic check to see if history format is outdated
         if (Array.isArray(parsedHistory) && parsedHistory.every(item => 'id' in item && 'fileName' in item)) {
           setHistory(parsedHistory);
         } else {
@@ -313,8 +349,8 @@ export function XmlValidator() {
 
     Promise.all(newResultsPromises).then(newResults => {
         const validResults = newResults.filter((r): r is ValidationResult => r !== null);
+        setResults(prevResults => [...validResults, ...prevResults].slice(0, MAX_FILES));
         validResults.forEach(saveToHistory);
-        setResults(validResults);
     });
   };
   
@@ -382,6 +418,7 @@ export function XmlValidator() {
             "CFOP": p.cfop,
             "CST": p.cst,
             "Valor Produto": p.vProd,
+            "Valor Frete": p.vFrete,
             "Base ICMS": p.icms.vBC,
             "Alíquota ICMS": p.icms.pICMS,
             "Valor ICMS": p.icms.vICMS,
@@ -412,11 +449,9 @@ export function XmlValidator() {
     toast({ title: "Histórico limpo." });
   };
   
-  const statusMap = {
-    error: { icon: XCircle, color: "text-destructive", badge: "destructive", label: "Erro"},
-    warning: { icon: AlertTriangle, color: "text-amber-500", badge: "secondary", label: "Aviso"},
-    success: { icon: CheckCircle2, color: "text-green-500", badge: "outline", label: "Válido"},
-    info: { icon: Info, color: "text-blue-500", badge: "default", label: "Info"}
+  const statusMap: Record<string, { icon: React.ElementType, color: string, badge: string, label: string }> = {
+    'Validada': { icon: CheckCircle2, color: "text-green-500", badge: "default", label: "Validada"},
+    'Divergente': { icon: XCircle, color: "text-destructive", badge: "destructive", label: "Divergente"},
   };
 
   const formatPercent = (value?: string) => {
@@ -456,20 +491,20 @@ export function XmlValidator() {
         
         <Tabs defaultValue="results">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="results">Resultado da Validação</TabsTrigger>
-            <TabsTrigger value="history"><History className="mr-2" />Histórico</TabsTrigger>
+            <TabsTrigger value="results">Resultado da Validação ({results.length})</TabsTrigger>
+            <TabsTrigger value="history"><History className="mr-2" />Histórico ({history.length})</TabsTrigger>
           </TabsList>
           
           <TabsContent value="results" className="mt-4">
             {results.length > 0 ? (
-              <Accordion type="single" collapsible className="w-full" defaultValue={results[0].id}>
+              <Accordion type="multiple" className="w-full space-y-2">
                 {results.map((result) => {
                   const hasDivergence = Object.values(result.calculationValidations).some(v => v.check === 'divergent');
                   const overallStatus = result.status === 'error' ? 'Erro' : hasDivergence ? 'Divergente' : 'Validada';
                   return (
                     <AccordionItem value={result.id} key={result.id} className="border-b-0">
                       <Card className="mb-2">
-                      <AccordionTrigger className="p-4">
+                      <AccordionTrigger className="p-4 hover:no-underline">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <span className="truncate font-medium flex-1 text-left">{result.fileName}</span>
                            <Badge variant={overallStatus === 'Erro' ? 'destructive' : overallStatus === 'Divergente' ? 'secondary' : 'default'} className="ml-auto flex-shrink-0">
@@ -493,8 +528,8 @@ export function XmlValidator() {
                                     <span className="font-medium text-muted-foreground">Chave</span><span className="truncate">{result.nfeData?.chave || "N/A"}</span>
                                     <span className="font-medium text-muted-foreground">Nº NFe</span><span>{result.nfeData?.nNf || "N/A"}</span>
                                     <span className="font-medium text-muted-foreground">Emissão</span><span>{result.nfeData?.dhEmi ? format(new Date(result.nfeData.dhEmi), "dd/MM/yy HH:mm") : 'N/A'}</span>
-                                    <span className="font-medium text-muted-foreground">Valor Total</span><span className="font-bold">R$ {result.nfeData?.vNF || "0.00"}</span>
                                     <span className="font-medium text-muted-foreground">Frete Total</span><span>R$ {result.nfeData?.vFrete || "0.00"}</span>
+                                    <span className="font-medium text-muted-foreground">Valor Total</span><span className="font-bold">R$ {result.nfeData?.vNF || "0.00"}</span>
                                </div>
                            </div>
                            <div>
@@ -513,7 +548,7 @@ export function XmlValidator() {
                         <Tabs defaultValue="fiscal">
                              <TabsList className="grid w-full grid-cols-2">
                                 <TabsTrigger value="fiscal">Dados Fiscais</TabsTrigger>
-                                <TabsTrigger value="products">Produtos</TabsTrigger>
+                                <TabsTrigger value="products">Produtos ({result.nfeData?.products.length})</TabsTrigger>
                             </TabsList>
                             <TabsContent value="fiscal" className="mt-4 space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -522,6 +557,7 @@ export function XmlValidator() {
                                         <CardContent className="space-y-2">
                                             <div className="text-sm"><span className="font-semibold text-muted-foreground">Base de Cálculo: </span>R$ {result.nfeData?.total.vBC || '0.00'}</div>
                                             <div className="text-sm"><span className="font-semibold text-muted-foreground">Valor ICMS: </span>R$ {result.nfeData?.total.vICMS || '0.00'}</div>
+                                            <ValidationStatusDisplay validation={result.calculationValidations.vBC} />
                                             <ValidationStatusDisplay validation={result.calculationValidations.vICMS} />
                                         </CardContent>
                                     </Card>
@@ -538,6 +574,7 @@ export function XmlValidator() {
                                         <CardContent className="space-y-2">
                                             <div className="text-sm"><span className="font-semibold text-muted-foreground">Base Cálculo ST: </span>R$ {result.nfeData?.total.vBCST || '0.00'}</div>
                                             <div className="text-sm"><span className="font-semibold text-muted-foreground">Valor ICMS-ST: </span>R$ {result.nfeData?.total.vST || '0.00'}</div>
+                                            <ValidationStatusDisplay validation={result.calculationValidations.vBCST} />
                                             <ValidationStatusDisplay validation={result.calculationValidations.vICMSST} />
                                         </CardContent>
                                     </Card>
@@ -551,6 +588,7 @@ export function XmlValidator() {
                                             <TableHead>Item</TableHead>
                                             <TableHead>CST</TableHead>
                                             <TableHead>CFOP</TableHead>
+                                            <TableHead>Frete</TableHead>
                                             <TableHead>Base ICMS</TableHead>
                                             <TableHead>Alíq. ICMS</TableHead>
                                             <TableHead>Valor ICMS</TableHead>
@@ -565,9 +603,10 @@ export function XmlValidator() {
                                     <TableBody>
                                         {result.nfeData?.products.map(p => (
                                             <TableRow key={p.item}>
-                                                <TableCell className="font-medium">{p.xProd}</TableCell>
+                                                <TableCell className="font-medium max-w-xs truncate">{p.xProd}</TableCell>
                                                 <TableCell>{p.cst}</TableCell>
                                                 <TableCell>{p.cfop}</TableCell>
+                                                <TableCell>R$ {p.vFrete || '0.00'}</TableCell>
                                                 <TableCell>R$ {p.icms.vBC || '0.00'}</TableCell>
                                                 <TableCell>{formatPercent(p.icms.pICMS)}</TableCell>
                                                 <TableCell>R$ {p.icms.vICMS || '0.00'}</TableCell>
@@ -617,22 +656,25 @@ export function XmlValidator() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.length > 0 ? history.map(item => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium truncate max-w-xs">{item.fileName}</TableCell>
-                          <TableCell>{format(new Date(item.date), "dd/MM/yy HH:mm")}</TableCell>
-                          <TableCell>
-                            {item.icmsStStatus !== 'not_applicable' && (
-                                <Badge variant={item.icmsStStatus === 'divergent' ? 'destructive' : 'default'}>{item.icmsStStatus === 'divergent' ? 'Divergente' : 'Validado'}</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                             <Badge variant={item.overallValidation === 'Divergente' ? 'destructive' : 'default'}>
-                               {item.overallValidation}
-                             </Badge>
-                          </TableCell>
-                        </TableRow>
-                     )) : (
+                  {history.length > 0 ? history.map(item => {
+                        const status = statusMap[item.overallValidation] || { badge: 'secondary', label: 'N/A' };
+                        return (
+                            <TableRow key={item.id}>
+                              <TableCell className="font-medium truncate max-w-xs">{item.fileName}</TableCell>
+                              <TableCell>{format(new Date(item.date), "dd/MM/yy HH:mm")}</TableCell>
+                              <TableCell>
+                                {item.icmsStStatus && item.icmsStStatus !== 'not_applicable' && (
+                                    <Badge variant={item.icmsStStatus === 'divergent' ? 'destructive' : 'default'}>{item.icmsStStatus === 'divergent' ? 'Divergente' : 'Validado'}</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                 <Badge variant={status.badge as any}>
+                                   {status.label}
+                                 </Badge>
+                              </TableCell>
+                            </TableRow>
+                        )
+                     }) : (
                     <TableRow>
                       <TableCell colSpan={4} className="h-24 text-center">
                         Nenhum histórico encontrado.
@@ -655,3 +697,5 @@ export function XmlValidator() {
     </Card>
   );
 }
+
+    
