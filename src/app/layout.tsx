@@ -3,6 +3,7 @@ import './globals.css';
 import {ThemeProvider} from '@/components/theme-provider';
 import {Toaster} from '@/components/ui/toaster';
 import { AiAssistant } from '@/components/ai-assistant';
+import { MouseSpotlight } from '@/components/mouse-spotlight';
 
 export const metadata: Metadata = {
   title: 'Sistema Fiscal',
@@ -25,7 +26,8 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <div className="fixed inset-0 -z-10 h-full w-full bg-background bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.2),rgba(255,255,255,0))]"></div>
-            <div className="relative flex flex-col min-h-screen">
+            <MouseSpotlight />
+            <div className="relative z-10 flex flex-col min-h-screen">
                 {children}
             </div>
             <Toaster />
