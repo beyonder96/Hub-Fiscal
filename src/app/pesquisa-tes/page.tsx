@@ -8,10 +8,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck, RotateCw, ClipboardList } from "lucide-react";
-import type { TesCode, SalePurpose, Company } from "@/lib/definitions";
-import { findCompraTesCodes, findVendaTesCodes } from "@/lib/tes-data";
+import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck, RotateCw, ClipboardList, Globe, UserSquare } from "lucide-react";
+import type { TesCode, SalePurpose, Company, ContributorType } from "@/lib/definitions";
+import { findCompraTesCodes, findVendaTesCodes, findVendaNormalTesForMatriz } from "@/lib/tes-data";
 import { TesResults } from "@/components/tes-results";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { taxRates } from "@/lib/tax-data";
 
 type Operation = "compra" | "venda";
 type SaleType = "normal" | "zfm";
@@ -23,40 +25,47 @@ export default function PesquisaTesPage() {
   const [saleType, setSaleType] = useState<SaleType | null>(null);
   const [hasSuframa, setHasSuframa] = useState<boolean | null>(null);
   const [hasSt, setHasSt] = useState<boolean | null>(null);
+  const [destinationState, setDestinationState] = useState<string | null>(null);
+  const [contributorType, setContributorType] = useState<ContributorType | null>(null);
   
   const [showResults, setShowResults] = useState(false);
   const [tesResults, setTesResults] = useState<TesCode[]>([]);
 
+  const resetSubsequentSelections = (level: number) => {
+    if (level <= 1) setOperation(null);
+    if (level <= 2) setSalePurpose(null);
+    if (level <= 3) setSaleType(null);
+    if (level <= 4) {
+      setHasSuframa(null);
+      setDestinationState(null);
+      setContributorType(null);
+    }
+    if (level <= 5) setHasSt(null);
+  }
+
   const handleCompanyChange = (value: Company) => {
     setCompany(value);
-    // Reset subsequent selections
-    setOperation(null);
-    setSalePurpose(null);
-    setSaleType(null);
-    setHasSuframa(null);
-    setHasSt(null);
+    resetSubsequentSelections(1);
   };
 
   const handleOperationChange = (value: Operation) => {
     setOperation(value);
-     // Reset subsequent selections
-    setSalePurpose(null);
-    setSaleType(null);
-    setHasSuframa(null);
-    setHasSt(null);
+    resetSubsequentSelections(2);
   };
 
   const handleSalePurposeChange = (value: SalePurpose) => {
     setSalePurpose(value);
-     // Reset subsequent selections
-    setSaleType(null);
-    setHasSuframa(null);
+    resetSubsequentSelections(3);
   };
 
   const handleSaleTypeChange = (value: SaleType) => {
     setSaleType(value);
-     // Reset subsequent selections
-    setHasSuframa(null);
+    resetSubsequentSelections(4);
+  };
+
+  const handleDestinationStateChange = (value: string) => {
+    setDestinationState(value);
+    resetSubsequentSelections(5);
   };
   
   const handleSearch = () => {
@@ -66,9 +75,12 @@ export default function PesquisaTesPage() {
             if (company === 'filial_es') {
                 results = findCompraTesCodes('filial_es');
             }
-            // Logic for Matriz compra can be added here
         } else if (operation === 'venda' && salePurpose && saleType) {
-            results = findVendaTesCodes(company, salePurpose, saleType, hasSuframa);
+            if (saleType === 'normal' && destinationState && contributorType && company === 'matriz') {
+                results = findVendaNormalTesForMatriz(salePurpose, destinationState, contributorType, hasSt);
+            } else if (saleType === 'zfm') {
+                results = findVendaTesCodes(company, salePurpose, saleType, hasSuframa);
+            }
         }
     }
     
@@ -80,35 +92,32 @@ export default function PesquisaTesPage() {
 
   const handleReset = () => {
     setCompany(null);
-    setOperation(null);
-    setSalePurpose(null);
-    setSaleType(null);
-    setHasSuframa(null);
-    setHasSt(null);
     setShowResults(false);
     setTesResults([]);
+    resetSubsequentSelections(1);
   };
+
+  const showStQuestionForMatrizVenda = company === 'matriz' && operation === 'venda' && salePurpose === 'revenda' && saleType === 'normal' && destinationState && taxRates.find(r => r.destinationStateCode === destinationState)?.protocol;
 
   const isSearchDisabled = (() => {
     if (!company || !operation) return true;
-    if (operation === "venda") {
-      if (!salePurpose) return true;
-      if (!saleType) return true;
-      if (saleType === "zfm" && salePurpose === 'revenda' && hasSuframa === null) return true;
+    if (operation === 'compra') {
+        if (company === 'matriz' && hasSt === null) return true;
+        if (company === 'filial_es') return false;
     }
-    if (company === 'matriz' && operation === "compra") {
-        if (hasSt === null) return true;
+    if (operation === 'venda') {
+      if (!salePurpose || !saleType) return true;
+      if (saleType === 'zfm') {
+          if (salePurpose === 'consumo') return false;
+          if (salePurpose === 'revenda' && hasSuframa === null) return true;
+      }
+      if (saleType === 'normal') {
+        if (!destinationState || !contributorType) return true;
+        if (showStQuestionForMatrizVenda && hasSt === null) return true;
+      }
     }
-    // Enable search for Filial ES Compra
-    if (company === 'filial_es' && operation === 'compra') return false;
-
-    // Enable search for ZFM flows
-    if (operation === 'venda' && saleType === 'zfm') {
-        if (salePurpose === 'consumo') return false;
-        if (salePurpose === 'revenda' && hasSuframa !== null) return false;
-    }
-
-    return true;
+    
+    return false;
   })();
 
   if (showResults) {
@@ -154,16 +163,13 @@ export default function PesquisaTesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
+            {/* Step 1: Company */}
             <div className="space-y-4">
                 <h3 className="flex items-center gap-2 font-semibold text-lg">
                     <Building className="h-5 w-5 text-primary" />
                     1. Qual a empresa?
                 </h3>
-                <RadioGroup 
-                    onValueChange={(value) => handleCompanyChange(value as Company)} 
-                    value={company ?? ""}
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                >
+                <RadioGroup onValueChange={handleCompanyChange} value={company ?? ""} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Label htmlFor="matriz" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
                          <RadioGroupItem value="matriz" id="matriz" className="sr-only" />
                          <span className="text-base font-semibold">Matriz</span>
@@ -175,17 +181,14 @@ export default function PesquisaTesPage() {
                 </RadioGroup>
             </div>
 
+            {/* Step 2: Operation */}
             {company && (
                  <div className="space-y-4">
                     <h3 className="flex items-center gap-2 font-semibold text-lg">
                         <ShoppingCart className="h-5 w-5 text-primary" />
                         2. Qual a operação?
                     </h3>
-                    <RadioGroup 
-                        onValueChange={(value) => handleOperationChange(value as Operation)} 
-                        value={operation ?? ""}
-                        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                    >
+                    <RadioGroup onValueChange={handleOperationChange} value={operation ?? ""} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Label htmlFor="compra" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
                              <RadioGroupItem value="compra" id="compra" className="sr-only" />
                              <span className="text-base font-semibold">Compra</span>
@@ -198,24 +201,31 @@ export default function PesquisaTesPage() {
                 </div>
             )}
             
+            {/* Compra Flow */}
+            {company === 'matriz' && operation === 'compra' && (
+              <div className="space-y-4">
+                <h3 className="flex items-center gap-2 font-semibold text-lg"><ShieldCheck className="h-5 w-5 text-primary" /><span>3. Possui ST (Substituição Tributária)?</span></h3>
+                <RadioGroup onValueChange={(value) => setHasSt(value === 'true')} value={hasSt === null ? '' : String(hasSt)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Label htmlFor="st_sim" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                    <RadioGroupItem value="true" id="st_sim" className="sr-only" /><span className="text-base font-semibold">Sim</span>
+                  </Label>
+                  <Label htmlFor="st_nao" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                    <RadioGroupItem value="false" id="st_nao" className="sr-only" /><span className="text-base font-semibold">Não</span>
+                  </Label>
+                </RadioGroup>
+              </div>
+            )}
+
+            {/* Venda Flow */}
             {operation === 'venda' && (
                  <div className="space-y-4">
-                    <h3 className="flex items-center gap-2 font-semibold text-lg">
-                        <ClipboardList className="h-5 w-5 text-primary" />
-                        3. Qual a finalidade?
-                    </h3>
-                    <RadioGroup 
-                        onValueChange={(value) => handleSalePurposeChange(value as SalePurpose)} 
-                        value={salePurpose ?? ""}
-                        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                    >
+                    <h3 className="flex items-center gap-2 font-semibold text-lg"><ClipboardList className="h-5 w-5 text-primary" />3. Qual a finalidade?</h3>
+                    <RadioGroup onValueChange={handleSalePurposeChange} value={salePurpose ?? ""} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Label htmlFor="revenda" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
-                             <RadioGroupItem value="revenda" id="revenda" className="sr-only" />
-                             <span className="text-base font-semibold">Para Revenda</span>
+                             <RadioGroupItem value="revenda" id="revenda" className="sr-only" /><span className="text-base font-semibold">Para Revenda</span>
                         </Label>
                         <Label htmlFor="consumo" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
-                            <RadioGroupItem value="consumo" id="consumo" className="sr-only" />
-                            <span className="text-base font-semibold">Para Consumo</span>
+                            <RadioGroupItem value="consumo" id="consumo" className="sr-only" /><span className="text-base font-semibold">Para Consumo</span>
                         </Label>
                     </RadioGroup>
                 </div>
@@ -223,81 +233,68 @@ export default function PesquisaTesPage() {
 
             {operation === 'venda' && salePurpose && (
                  <div className="space-y-4">
-                    <h3 className="flex items-center gap-2 font-semibold text-lg">
-                        <Package className="h-5 w-5 text-primary" />
-                        4. Qual o tipo de venda?
-                    </h3>
-                    <RadioGroup 
-                        onValueChange={(value) => handleSaleTypeChange(value as SaleType)} 
-                        value={saleType ?? ""}
-                        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                    >
+                    <h3 className="flex items-center gap-2 font-semibold text-lg"><Package className="h-5 w-5 text-primary" />4. Qual o tipo de venda?</h3>
+                    <RadioGroup onValueChange={handleSaleTypeChange} value={saleType ?? ""} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Label htmlFor="normal" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
-                             <RadioGroupItem value="normal" id="normal" className="sr-only" />
-                             <span className="text-base font-semibold">Normal</span>
+                             <RadioGroupItem value="normal" id="normal" className="sr-only" /><span className="text-base font-semibold">Normal</span>
                         </Label>
                         <Label htmlFor="zfm" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
-                            <RadioGroupItem value="zfm" id="zfm" className="sr-only" />
-                            <span className="text-base font-semibold">ZFM (Zona Franca)</span>
+                            <RadioGroupItem value="zfm" id="zfm" className="sr-only" /><span className="text-base font-semibold">ZFM (Zona Franca)</span>
                         </Label>
                     </RadioGroup>
                 </div>
             )}
 
+            {/* Venda -> ZFM Flow */}
             {operation === 'venda' && salePurpose === 'revenda' && saleType === 'zfm' && (
                  <div className="space-y-4">
-                    <h3 className="flex items-center gap-2 font-semibold text-lg">
-                        <Anchor className="h-5 w-5 text-primary" />
-                        5. Possui SUFRAMA?
-                    </h3>
-                    <RadioGroup 
-                        onValueChange={(value) => setHasSuframa(value === 'true')} 
-                        value={hasSuframa === null ? '' : String(hasSuframa)}
-                        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                    >
+                    <h3 className="flex items-center gap-2 font-semibold text-lg"><Anchor className="h-5 w-5 text-primary" />5. Possui SUFRAMA?</h3>
+                    <RadioGroup onValueChange={(value) => setHasSuframa(value === 'true')} value={hasSuframa === null ? '' : String(hasSuframa)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Label htmlFor="suframa_sim" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
-                             <RadioGroupItem value="true" id="suframa_sim" className="sr-only" />
-                             <span className="text-base font-semibold">Sim</span>
+                             <RadioGroupItem value="true" id="suframa_sim" className="sr-only" /><span className="text-base font-semibold">Sim</span>
                         </Label>
                         <Label htmlFor="suframa_nao" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
-                            <RadioGroupItem value="false" id="suframa_nao" className="sr-only" />
-                            <span className="text-base font-semibold">Não</span>
+                            <RadioGroupItem value="false" id="suframa_nao" className="sr-only" /><span className="text-base font-semibold">Não</span>
                         </Label>
                     </RadioGroup>
                 </div>
             )}
+            
+            {/* Venda -> Normal Flow */}
+            {company === 'matriz' && operation === 'venda' && saleType === 'normal' && (
+                <>
+                <div className="space-y-4">
+                    <h3 className="flex items-center gap-2 font-semibold text-lg"><Globe className="h-5 w-5 text-primary" />5. Qual o estado de destino?</h3>
+                    <Select onValueChange={handleDestinationStateChange} value={destinationState ?? ""}>
+                        <SelectTrigger><SelectValue placeholder="Selecione um estado" /></SelectTrigger>
+                        <SelectContent>
+                           {taxRates.map(state => <SelectItem key={state.destinationStateCode} value={state.destinationStateCode}>{state.destinationStateName}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div className="space-y-4">
+                    <h3 className="flex items-center gap-2 font-semibold text-lg"><UserSquare className="h-5 w-5 text-primary" />6. Qual o tipo de cliente?</h3>
+                    <RadioGroup onValueChange={(value) => setContributorType(value as ContributorType)} value={contributorType ?? ""} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Label htmlFor="contribuinte" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                             <RadioGroupItem value="contribuinte" id="contribuinte" className="sr-only" /><span className="text-base font-semibold">Contribuinte</span>
+                        </Label>
+                        <Label htmlFor="isento" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                            <RadioGroupItem value="isento" id="isento" className="sr-only" /><span className="text-base font-semibold">Isento / Não Contribuinte</span>
+                        </Label>
+                    </RadioGroup>
+                </div>
+                </>
+            )}
 
-            {company === 'matriz' && operation === 'compra' && (
+            {showStQuestionForMatrizVenda && (
               <div className="space-y-4">
-                <h3 className="flex items-center gap-2 font-semibold text-lg">
-                  <ShieldCheck className="h-5 w-5 text-primary" />
-                  <span>3. Possui ST (Substituição Tributária)?</span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-semibold">Ramal: 7806 ou 7542 (Fiscal)</p>
-                        <p className="text-sm text-muted-foreground">Obs: Informe o NCM para saber</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </h3>
-                <RadioGroup 
-                  onValueChange={(value) => setHasSt(value === 'true')} 
-                  value={hasSt === null ? '' : String(hasSt)}
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                >
-                  <Label htmlFor="st_sim" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
-                    <RadioGroupItem value="true" id="st_sim" className="sr-only" />
-                    <span className="text-base font-semibold">Sim</span>
+                <h3 className="flex items-center gap-2 font-semibold text-lg"><ShieldCheck className="h-5 w-5 text-primary" />7. Possui ST (Substituição Tributária)?</h3>
+                <RadioGroup onValueChange={(value) => setHasSt(value === 'true')} value={hasSt === null ? '' : String(hasSt)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Label htmlFor="st_sim_venda" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                    <RadioGroupItem value="true" id="st_sim_venda" className="sr-only" /><span className="text-base font-semibold">Sim</span>
                   </Label>
-                  <Label htmlFor="st_nao" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
-                    <RadioGroupItem value="false" id="st_nao" className="sr-only" />
-                    <span className="text-base font-semibold">Não</span>
+                  <Label htmlFor="st_nao_venda" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer [&:has([data-state=checked])]:border-primary transition-all">
+                    <RadioGroupItem value="false" id="st_nao_venda" className="sr-only" /><span className="text-base font-semibold">Não</span>
                   </Label>
                 </RadioGroup>
               </div>
@@ -314,3 +311,5 @@ export default function PesquisaTesPage() {
     </>
   );
 }
+
+    

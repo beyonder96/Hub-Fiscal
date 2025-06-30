@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 
 export const taxFormSchema = z.object({
@@ -179,6 +180,7 @@ export interface ValidationHistoryItem {
 // --- TES Search Definitions ---
 export type Company = "matriz" | "filial_es";
 export type SalePurpose = "revenda" | "consumo";
+export type ContributorType = "contribuinte" | "isento";
 
 export interface TesCode {
   code: string;
@@ -187,3 +189,5 @@ export interface TesCode {
   atualizaEstoque: boolean;
   description: string;
 }
+
+    
