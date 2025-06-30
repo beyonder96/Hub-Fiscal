@@ -1,5 +1,15 @@
 import { Header } from "@/components/header";
-import { CalculoIcmsSt } from "@/components/calculo-icms-st";
+import dynamic from 'next/dynamic';
+import { Skeleton } from "@/components/ui/skeleton";
+
+const CalculoIcmsSt = dynamic(() => import('@/components/calculo-icms-st'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full max-w-4xl mx-auto">
+      <Skeleton className="h-[500px] w-full" />
+    </div>
+  )
+});
 
 export default function CalculoIcmsStPage() {
   return (

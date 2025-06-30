@@ -36,7 +36,7 @@ const ResultCard = ({ title, value, isPrimary = false }: { title: string, value:
   </Card>
 );
 
-export function CalculoIcmsSt() {
+export default function CalculoIcmsSt() {
   const [result, setResult] = useState<CalculationResult | null>(null);
 
   const form = useForm<IcmsStFormData>({
