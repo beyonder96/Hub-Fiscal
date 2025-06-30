@@ -47,7 +47,7 @@ export default function PesquisaTesPage() {
       if (!saleType) return true;
       if (saleType === "zfm" && hasSuframa === null) return true;
     }
-    if (operation === "compra") {
+    if (company === 'matriz' && operation === "compra") {
         if (hasSt === null) return true;
     }
     return false;
@@ -167,7 +167,7 @@ export default function PesquisaTesPage() {
                 </div>
             )}
 
-            {operation === 'compra' && (
+            {company === 'matriz' && operation === 'compra' && (
               <div className="space-y-4">
                 <h3 className="flex items-center gap-2 font-semibold text-lg">
                   <ShieldCheck className="h-5 w-5 text-primary" />
