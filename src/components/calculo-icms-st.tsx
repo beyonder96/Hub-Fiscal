@@ -6,12 +6,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { IcmsStFormData } from "@/lib/definitions";
 import { icmsStSchema } from "@/lib/definitions";
+import Papa from "papaparse";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2 } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 
@@ -24,6 +25,8 @@ interface CalculationResult {
   valorSt: number;
   valorTotalNota: number;
   basePisCofins: number;
+  valorIcmsProprio: number;
+  valorIpi: number;
 }
 
 const ResultCard = ({ title, value, isPrimary = false }: { title: string, value: number, isPrimary?: boolean }) => (
@@ -39,6 +42,7 @@ const ResultCard = ({ title, value, isPrimary = false }: { title: string, value:
 
 export default function CalculoIcmsSt() {
   const [result, setResult] = useState<CalculationResult | null>(null);
+  const [lastCalcData, setLastCalcData] = useState<IcmsStFormData | null>(null);
   const [ivaOriginal, setIvaOriginal] = useState("");
   const [aliqInter, setAliqInter] = useState("");
   const [aliqInterna, setAliqInterna] = useState("");
@@ -47,6 +51,7 @@ export default function CalculoIcmsSt() {
   const form = useForm<IcmsStFormData>({
     resolver: zodResolver(icmsStSchema),
     defaultValues: {
+      ncm: "",
       valorMercadoria: "",
       valorFrete: "",
       aliqIpi: "",
@@ -89,12 +94,53 @@ export default function CalculoIcmsSt() {
       valorSt,
       valorTotalNota,
       basePisCofins,
+      valorIcmsProprio,
+      valorIpi
     });
+    setLastCalcData(data);
   };
 
   const handleClear = () => {
     form.reset();
     setResult(null);
+    setLastCalcData(null);
+  };
+  
+  const handleExport = () => {
+    if (!result || !lastCalcData) {
+      alert("Nenhum resultado para exportar.");
+      return;
+    }
+
+    const dataToExport = [
+      { Campo: "DADOS DE ENTRADA", Valor: ""},
+      { Campo: "NCM", Valor: lastCalcData.ncm || "N/A" },
+      { Campo: "Valor da Mercadoria", Valor: formatCurrency(parseLocaleString(lastCalcData.valorMercadoria)) },
+      { Campo: "Valor do Frete", Valor: formatCurrency(parseLocaleString(lastCalcData.valorFrete || "0")) },
+      { Campo: "Alíquota IPI (%)", Valor: `${parseLocaleString(lastCalcData.aliqIpi || "0")}%` },
+      { Campo: "Alíquota ICMS (%)", Valor: `${parseLocaleString(lastCalcData.aliqIcms)}%` },
+      { Campo: "IVA/MVA (%)", Valor: `${parseLocaleString(lastCalcData.mva)}%` },
+      { Campo: "Alíquota ICMS-ST (%)", Valor: `${parseLocaleString(lastCalcData.aliqIcmsSt)}%` },
+      { Campo: "Redução Base ST (%)", Valor: `${parseLocaleString(lastCalcData.redBaseSt || "0")}%` },
+      { Campo: "", Valor: ""},
+      { Campo: "RESULTADOS DO CÁLCULO", Valor: ""},
+      { Campo: "Valor ICMS Próprio", Valor: formatCurrency(result.valorIcmsProprio) },
+      { Campo: "Valor IPI", Valor: formatCurrency(result.valorIpi) },
+      { Campo: "Base de Cálculo ST", Valor: formatCurrency(result.baseSt) },
+      { Campo: "Valor do ICMS-ST", Valor: formatCurrency(result.valorSt) },
+      { Campo: "Base PIS/COFINS", Valor: formatCurrency(result.basePisCofins) },
+      { Campo: "Valor Total da Nota (com ST)", Valor: formatCurrency(result.valorTotalNota) },
+    ];
+    
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "relatorio_calculo_icms_st.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleIvaCalculation = () => {
@@ -134,6 +180,13 @@ export default function CalculoIcmsSt() {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                 <FormField control={form.control} name="ncm" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>NCM</FormLabel>
+                    <FormControl><Input placeholder="84439933" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
                 <FormField control={form.control} name="valorMercadoria" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Vlr. Mercadoria *</FormLabel>
@@ -179,10 +232,10 @@ export default function CalculoIcmsSt() {
                 <FormField control={form.control} name="redBaseSt" render={({ field }) => (
                    <FormItem>
                     <FormLabel className="flex items-center gap-1">
-                      Redução Base ST
+                      Redução Base ST (%)
                       <TooltipProvider>
                         <Tooltip><TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
-                          <TooltipContent><p>Informe o percentual de redução da base de cálculo do ICMS-ST.</p></TooltipContent>
+                          <TooltipContent><p>Ex: Alíquota interna de 18% com redução para 12%, a redução é de 33.33%.</p></TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </FormLabel>
@@ -208,7 +261,13 @@ export default function CalculoIcmsSt() {
 
       {result && (
         <section className="w-full max-w-4xl mx-auto animate-in fade-in-50 duration-500">
-          <h2 className="text-2xl font-bold text-center mb-6 font-headline">Resultados do Cálculo</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold font-headline">Resultados do Cálculo</h2>
+            <Button variant="outline" onClick={handleExport}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Exportar para CSV
+            </Button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <ResultCard title="Base de Cálculo ST" value={result.baseSt} />
             <ResultCard title="Valor do ICMS-ST" value={result.valorSt} isPrimary />

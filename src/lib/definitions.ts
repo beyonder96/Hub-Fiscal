@@ -201,6 +201,7 @@ const numericString = (errorMessage: string) =>
   }, { message: "Valor inválido." });
 
 export const icmsStSchema = z.object({
+  ncm: z.string().optional(),
   valorMercadoria: numericString("Valor da mercadoria é obrigatório."),
   valorFrete: numericString("Valor inválido.").optional().or(z.literal('')),
   aliqIpi: numericString("Valor inválido.").optional().or(z.literal('')),
