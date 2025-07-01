@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Building, SearchX, PlusCircle, Pencil, Trash2, Link as LinkIcon, Briefcase, FileText, Landmark, Percent, CalendarDays, Key, MapPin, Mail, FileCheck2, User, Users, ShieldQuestion } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const InfoBox = ({ label, value, icon, className }: { label: string; value?: string; icon: React.ElementType; className?: string }) => {
   const Icon = icon;
