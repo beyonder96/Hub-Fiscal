@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -9,11 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Search, Building, ShoppingCart, ArrowRight, Package, Anchor, HelpCircle, ShieldCheck, RotateCw, ClipboardList, Globe, UserSquare } from "lucide-react";
-import type { TesCode, SalePurpose, Company, ContributorType } from "@/lib/definitions";
+import type { TesCode, SalePurpose, Company, ContributorType, TaxRateData } from "@/lib/definitions";
 import { findCompraTesCodes, findVendaTesCodes, findVendaNormalTes } from "@/lib/tes-data";
 import { TesResults } from "@/components/tes-results";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { taxRates } from "@/lib/tax-data";
+import { initialTaxRates } from "@/lib/tax-data";
 
 type Operation = "compra" | "venda";
 type SaleType = "normal" | "zfm";
@@ -30,6 +30,30 @@ export default function PesquisaTesPage() {
   
   const [showResults, setShowResults] = useState(false);
   const [tesResults, setTesResults] = useState<TesCode[]>([]);
+  const [allTaxRates, setAllTaxRates] = useState<TaxRateData[]>([]);
+
+  useEffect(() => {
+    const loadRates = () => {
+        try {
+            const stored = localStorage.getItem("taxRates");
+            if (stored) {
+                setAllTaxRates(JSON.parse(stored));
+            } else {
+                setAllTaxRates(initialTaxRates);
+                localStorage.setItem("taxRates", JSON.stringify(initialTaxRates));
+            }
+        } catch (error) {
+            console.error("Failed to load tax rates", error);
+            setAllTaxRates(initialTaxRates);
+        }
+    };
+
+    loadRates();
+    window.addEventListener('storage', loadRates);
+    return () => {
+        window.removeEventListener('storage', loadRates);
+    };
+  }, []);
 
   const resetSubsequentSelections = (level: number) => {
     if (level <= 1) setOperation(null);
@@ -77,7 +101,7 @@ export default function PesquisaTesPage() {
             }
         } else if (operation === 'venda' && salePurpose && saleType) {
             if (saleType === 'normal' && destinationState && contributorType) {
-                results = findVendaNormalTes(company, salePurpose, destinationState, contributorType, hasSt);
+                results = findVendaNormalTes(company, salePurpose, destinationState, contributorType, hasSt, allTaxRates);
             } else if (saleType === 'zfm') {
                 results = findVendaTesCodes(company, salePurpose, saleType, hasSuframa);
             }
@@ -98,7 +122,7 @@ export default function PesquisaTesPage() {
   };
 
   const showStQuestionForMatrizVenda = company === 'matriz' && operation === 'venda' && salePurpose === 'revenda' && saleType === 'normal' && destinationState;
-  const isStQuestionRequired = showStQuestionForMatrizVenda && taxRates.find(r => r.destinationStateCode === destinationState)?.protocol;
+  const isStQuestionRequired = showStQuestionForMatrizVenda && allTaxRates.find(r => r.destinationStateCode === destinationState)?.protocol;
 
   const isSearchDisabled = (() => {
     if (!company || !operation) return true;
@@ -270,7 +294,7 @@ export default function PesquisaTesPage() {
                     <Select onValueChange={handleDestinationStateChange} value={destinationState ?? ""}>
                         <SelectTrigger><SelectValue placeholder="Selecione um estado" /></SelectTrigger>
                         <SelectContent>
-                           {taxRates.map(state => <SelectItem key={state.destinationStateCode} value={state.destinationStateCode}>{state.destinationStateName}</SelectItem>)}
+                           {allTaxRates.sort((a,b) => a.destinationStateName.localeCompare(b.destinationStateName)).map(state => <SelectItem key={state.destinationStateCode} value={state.destinationStateCode}>{state.destinationStateName}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>

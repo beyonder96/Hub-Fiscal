@@ -3,9 +3,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import type { TaxFormData } from "@/lib/definitions";
+import type { TaxFormData, TaxRateData } from "@/lib/definitions";
 import { taxFormSchema } from "@/lib/definitions";
-import { taxRates } from "@/lib/tax-data";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,9 +29,10 @@ interface TaxFormProps {
   onSearch: (data: TaxFormData) => void;
   onClear: () => void;
   isSubmitting: boolean;
+  rates: TaxRateData[];
 }
 
-export function TaxForm({ onSearch, onClear, isSubmitting }: TaxFormProps) {
+export function TaxForm({ onSearch, onClear, isSubmitting, rates }: TaxFormProps) {
   const form = useForm<TaxFormData>({
     resolver: zodResolver(taxFormSchema),
     defaultValues: {
@@ -41,7 +41,7 @@ export function TaxForm({ onSearch, onClear, isSubmitting }: TaxFormProps) {
     },
   });
 
-  const sortedStates = [...taxRates].sort((a, b) =>
+  const sortedStates = [...rates].sort((a, b) =>
     a.destinationStateName.localeCompare(b.destinationStateName)
   );
   

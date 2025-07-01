@@ -1,6 +1,7 @@
+
 import type { TaxRateData } from "@/lib/definitions";
 
-export const taxRates: TaxRateData[] = [
+export const initialTaxRates: TaxRateData[] = [
     { destinationStateName: "Acre", destinationStateCode: "AC", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 19, suframa: true, protocol: false },
     { destinationStateName: "Alagoas", destinationStateCode: "AL", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 19, suframa: false, protocol: false },
     { destinationStateName: "Amapá", destinationStateCode: "AP", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 18, suframa: true, protocol: false },
@@ -29,7 +30,3 @@ export const taxRates: TaxRateData[] = [
     { destinationStateName: "Sergipe", destinationStateCode: "SE", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 19, suframa: false, protocol: false },
     { destinationStateName: "Tocantins", destinationStateCode: "TO", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 20, suframa: false, protocol: false },
 ];
-
-export function findTaxRate(destinationCode: string): TaxRateData | undefined {
-    return taxRates.find(rate => rate.destinationStateCode === destinationCode);
-}

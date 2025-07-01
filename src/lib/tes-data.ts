@@ -1,6 +1,5 @@
 
-import type { TesCode, SalePurpose, Company, ContributorType } from "./definitions";
-import { taxRates } from "./tax-data";
+import type { TesCode, SalePurpose, Company, ContributorType, TaxRateData } from "./definitions";
 
 interface VendaConsumoBranch {
   normal?: TesCode[];
@@ -100,10 +99,11 @@ export function findVendaNormalTes(
   purpose: SalePurpose,
   destinationState: string,
   contributorType: ContributorType,
-  hasSt: boolean | null
+  hasSt: boolean | null,
+  allTaxRates: TaxRateData[]
 ): TesCode[] | undefined {
 
-  const stateData = taxRates.find(r => r.destinationStateCode === destinationState);
+  const stateData = allTaxRates.find(r => r.destinationStateCode === destinationState);
   if (!stateData) return undefined;
   
   const hasFecap = destinationState === 'RJ' || destinationState === 'AL';
