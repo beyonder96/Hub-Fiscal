@@ -205,6 +205,7 @@ export const icmsStSchema = z.object({
   ncm: z.string().optional(),
   valorMercadoria: numericString("Este campo é obrigatório."),
   valorFrete: numericString("Valor inválido.").optional().or(z.literal('')),
+  valorIpi: numericString("Valor inválido.").optional().or(z.literal('')),
   aliqIpi: numericString("Valor inválido.").optional().or(z.literal('')),
   aliqIcms: numericString("Alíquota ICMS é obrigatória."),
   mva: numericString("IVA/MVA é obrigatório."),

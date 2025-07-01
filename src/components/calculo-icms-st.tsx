@@ -67,6 +67,7 @@ export default function CalculoIcmsSt() {
       valorMercadoria: "",
       valorFrete: "",
       aliqIpi: "",
+      valorIpi: "",
       aliqIcms: "",
       mva: "",
       aliqIcmsSt: "",
@@ -81,7 +82,6 @@ export default function CalculoIcmsSt() {
   const onSubmit = (data: IcmsStFormData) => {
     let valorMercadoria = 0;
     let valorIpi = 0;
-    const aliqIpi = parseLocaleString(data.aliqIpi || "0");
     const valorFrete = parseLocaleString(data.valorFrete || "0");
     const aliqIcms = parseLocaleString(data.aliqIcms);
     const mva = parseLocaleString(data.mva);
@@ -89,13 +89,16 @@ export default function CalculoIcmsSt() {
     const redBaseSt = parseLocaleString(data.redBaseSt || "0");
 
     if (data.operationType === 'pecas') {
+      const aliqIpi = parseLocaleString(data.aliqIpi || "0");
       const valorTotalComIpi = parseLocaleString(data.valorMercadoria);
       valorMercadoria = parseFloat((valorTotalComIpi / (1 + (aliqIpi / 100))).toFixed(2));
       valorIpi = parseFloat((valorTotalComIpi - valorMercadoria).toFixed(2));
-    } else {
+    } else if (data.operationType === 'compra') {
       valorMercadoria = parseLocaleString(data.valorMercadoria);
-      const baseIpi = valorMercadoria + valorFrete;
-      valorIpi = parseFloat((baseIpi * (aliqIpi / 100)).toFixed(2));
+      valorIpi = parseLocaleString(data.valorIpi || "0");
+    } else { // 'transferencia'
+      valorMercadoria = parseLocaleString(data.valorMercadoria);
+      valorIpi = 0; // IPI not applicable for transfers
     }
 
     const baseIcmsProprio = valorMercadoria + valorFrete;
@@ -107,9 +110,11 @@ export default function CalculoIcmsSt() {
     const valorStBruto = (baseSt * (aliqIcmsSt / 100)) - valorIcmsProprio;
     const valorSt = valorStBruto > 0 ? parseFloat(valorStBruto.toFixed(2)) : 0;
 
-    let valorTotalNota = valorMercadoria + valorFrete + valorIpi + valorSt;
+    let valorTotalNota;
     if (data.operationType === 'pecas') {
       valorTotalNota = parseLocaleString(data.valorMercadoria) + valorFrete + valorSt;
+    } else {
+      valorTotalNota = valorMercadoria + valorFrete + valorIpi + valorSt;
     }
     
     const basePisCofins = data.operationType === 'compra'
@@ -126,6 +131,7 @@ export default function CalculoIcmsSt() {
     });
     setLastCalcData(data);
   };
+
 
   const handleClear = () => {
     form.reset();
@@ -178,7 +184,13 @@ export default function CalculoIcmsSt() {
     }
 
     printRow(y += 7, "Valor do Frete:", formatCurrency(parseLocaleString(lastCalcData.valorFrete || "0")));
-    printRow(y += 7, "Alíquota IPI:", formatPercent(lastCalcData.aliqIpi));
+    
+    if (lastCalcData.operationType === 'compra') {
+        printRow(y += 7, "Valor IPI:", formatCurrency(parseLocaleString(lastCalcData.valorIpi || '0')));
+    } else if (lastCalcData.operationType === 'pecas') {
+        printRow(y += 7, "Alíquota IPI:", formatPercent(lastCalcData.aliqIpi));
+    }
+
     printRow(y += 7, "Alíquota ICMS:", formatPercent(lastCalcData.aliqIcms));
     printRow(y += 7, "IVA/MVA:", formatPercent(lastCalcData.mva));
     printRow(y += 7, "Alíquota ICMS-ST:", formatPercent(lastCalcData.aliqIcmsSt));
@@ -306,13 +318,25 @@ export default function CalculoIcmsSt() {
                     <FormMessage />
                   </FormItem>
                 )} />
-                 <FormField control={form.control} name="aliqIpi" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Alíquota IPI{operationType === 'pecas' ? ' *' : ''}</FormLabel>
-                    <div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                
+                {operationType === 'compra' ? (
+                    <FormField control={form.control} name="valorIpi" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor do IPI</FormLabel>
+                        <div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                ) : operationType === 'pecas' ? (
+                  <FormField control={form.control} name="aliqIpi" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alíquota IPI *</FormLabel>
+                      <div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                ) : <div />}
+
                 <FormField control={form.control} name="aliqIcms" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Alíq. ICMS *</FormLabel>
