@@ -20,6 +20,16 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
+const formatPercent = (value: string | undefined): string => {
+    if (!value) return "0%";
+    const num = parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
+    // Don't show decimals if it's an integer
+    if (num % 1 === 0) {
+        return `${num}%`;
+    }
+    return `${num.toFixed(2)}%`;
+}
+
 interface CalculationResult {
   baseSt: number;
   valorSt: number;
@@ -115,8 +125,9 @@ export default function CalculoIcmsSt() {
     const doc = new jsPDF();
     
     const printRow = (y: number, label: string, value: string) => {
+        doc.setFont("helvetica", "normal");
         doc.text(label, 15, y);
-        doc.text(value, 120, y);
+        doc.text(value, 195, y, { align: 'right' });
     };
 
     doc.setFontSize(18);
@@ -124,24 +135,24 @@ export default function CalculoIcmsSt() {
 
     doc.setFontSize(14);
     doc.text("Dados de Entrada", 14, 40);
-    doc.line(14, 42, 200, 42); 
+    doc.line(14, 42, 195, 42); 
 
     doc.setFontSize(11);
     let y = 50;
     printRow(y, "NCM:", lastCalcData.ncm || "N/A");
     printRow(y += 7, "Valor da Mercadoria:", formatCurrency(parseLocaleString(lastCalcData.valorMercadoria)));
     printRow(y += 7, "Valor do Frete:", formatCurrency(parseLocaleString(lastCalcData.valorFrete || "0")));
-    printRow(y += 7, "Alíquota IPI:", `${parseLocaleString(lastCalcData.aliqIpi || "0")}%`);
-    printRow(y += 7, "Alíquota ICMS:", `${parseLocaleString(lastCalcData.aliqIcms)}%`);
-    printRow(y += 7, "IVA/MVA:", `${parseLocaleString(lastCalcData.mva)}%`);
-    printRow(y += 7, "Alíquota ICMS-ST:", `${parseLocaleString(lastCalcData.aliqIcmsSt)}%`);
-    printRow(y += 7, "Redução Base ST:", `${parseLocaleString(lastCalcData.redBaseSt || "0")}%`);
+    printRow(y += 7, "Alíquota IPI:", formatPercent(lastCalcData.aliqIpi));
+    printRow(y += 7, "Alíquota ICMS:", formatPercent(lastCalcData.aliqIcms));
+    printRow(y += 7, "IVA/MVA:", formatPercent(lastCalcData.mva));
+    printRow(y += 7, "Alíquota ICMS-ST:", formatPercent(lastCalcData.aliqIcmsSt));
+    printRow(y += 7, "Redução Base ST:", formatPercent(lastCalcData.redBaseSt));
     
     y += 15;
 
     doc.setFontSize(14);
     doc.text("Resultados do Cálculo", 14, y);
-    doc.line(14, y + 2, 200, y + 2);
+    doc.line(14, y + 2, 195, y + 2);
     y += 10;
     
     doc.setFontSize(11);
@@ -151,9 +162,11 @@ export default function CalculoIcmsSt() {
     printRow(y += 7, "Valor do ICMS-ST:", formatCurrency(result.valorSt));
     printRow(y += 7, "Base PIS/COFINS:", formatCurrency(result.basePisCofins));
     
+    y += 10;
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    printRow(y += 10, "Valor Total da Nota (com ST):", formatCurrency(result.valorTotalNota));
+    doc.text("Valor Total da Nota (com ST):", 15, y);
+    doc.text(formatCurrency(result.valorTotalNota), 195, y, { align: 'right' });
 
     doc.save("relatorio_calculo_icms_st.pdf");
   };
