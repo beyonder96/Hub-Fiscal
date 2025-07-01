@@ -140,7 +140,7 @@ export function AdminDashboard() {
              <Tabs defaultValue="chamados">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="chamados">Gerenciar Chamados</TabsTrigger>
-                    <TabsTrigger value="notas">Acompanhar Notas Fiscais</TabsTrigger>
+                    <TabsTrigger value="notas">Acompanhar Boletos</TabsTrigger>
                 </TabsList>
                 <TabsContent value="chamados">
                     <Card>
