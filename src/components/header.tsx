@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookMarked, Calculator, FileCode, FileSpreadsheet, FileText, Search, Shield, Undo2, UserCheck } from "lucide-react";
+import { BookMarked, Calculator, FileCode, FileSpreadsheet, FileText, Search, Shield, UserCheck } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,6 @@ const toolLinks = [
   { href: "/validador-xml", label: "Validador XML", icon: FileCode },
   { href: "/calculo-icms-st", label: "Cálculo ICMS-ST", icon: FileSpreadsheet },
   { href: "/pesquisa-tes", label: "Pesquisa de TES", icon: Search },
-  { href: "/devolucao", label: "Como Fazer Devolução", icon: Undo2 },
 ];
 
 export function Header() {

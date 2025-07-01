@@ -1,7 +1,7 @@
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Calculator, FileCode, FileSpreadsheet, FileText, Search, Undo2 } from "lucide-react";
+import { ArrowRight, Calculator, FileCode, FileSpreadsheet, FileText, Search } from "lucide-react";
 import Link from "next/link";
 
 const features = [
@@ -44,14 +44,6 @@ const features = [
     href: "/pesquisa-tes",
     bgColor: "bg-yellow-500/10",
     textColor: "text-yellow-300"
-  },
-  {
-    icon: <Undo2 className="h-8 w-8 text-primary" />,
-    title: "Como Fazer Devolução",
-    description: "Guias e passo-a-passo para realizar devoluções de mercadorias.",
-    href: "/devolucao",
-    bgColor: "bg-red-500/10",
-    textColor: "text-red-300"
   },
 ];
 
