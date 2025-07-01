@@ -5,17 +5,21 @@ import { useEffect, useState, useMemo } from "react";
 import type { Chamado, ChamadoStatus } from "@/lib/definitions";
 import { AdminStatCard } from "./admin-stat-card";
 import { AdminChamadosManagement } from "./admin-chamados-management";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
-import { TrendingUp, CheckCircle, Clock, AlertTriangle, BarChartHorizontal, Users } from "lucide-react";
+import { TrendingUp, CheckCircle, Clock, AlertTriangle, BarChartHorizontal, Users, Trash2 } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { AdminNotasFiscais } from "./admin-notas-fiscais";
 import { AdminPrestadorLookup } from "./admin-prestador-lookup";
+import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
+
 
 export function AdminDashboard() {
     const [chamados, setChamados] = useState<Chamado[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
 
     const refreshChamados = () => {
         try {
@@ -44,6 +48,25 @@ export function AdminDashboard() {
         );
         setChamados(updatedChamados);
         localStorage.setItem("chamados", JSON.stringify(updatedChamados));
+    };
+
+    const handleClearCompleted = () => {
+        const completedCount = chamados.filter(c => c.status === "Resolvido").length;
+        if (completedCount === 0) {
+            toast({
+                title: "Nenhum chamado concluído",
+                description: "Não há chamados para limpar.",
+            });
+            return;
+        }
+
+        const remainingChamados = chamados.filter(c => c.status !== "Resolvido");
+        setChamados(remainingChamados);
+        localStorage.setItem("chamados", JSON.stringify(remainingChamados));
+        toast({
+            title: "Chamados concluídos limpos!",
+            description: `${completedCount} chamado(s) foram removidos da lista.`,
+        });
     };
 
     const stats = useMemo(() => {
@@ -146,8 +169,15 @@ export function AdminDashboard() {
                 </TabsList>
                 <TabsContent value="chamados">
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Gerenciamento de Chamados</CardTitle>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Gerenciamento de Chamados</CardTitle>
+                                <CardDescription>Visualize e gerencie todos os chamados.</CardDescription>
+                            </div>
+                            <Button variant="outline" onClick={handleClearCompleted} disabled={stats.concluidos === 0}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Limpar Concluídos
+                            </Button>
                         </CardHeader>
                         <CardContent>
                             <AdminChamadosManagement 
