@@ -46,7 +46,7 @@ const ResultCard = ({ title, value, isPrimary = false }: { title: string, value:
       <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
     </CardHeader>
     <CardContent>
-      <p className="text-3xl font-bold">{formatCurrency(value)}</p>
+      <p className="text-3xl font-bold lg:text-2xl">{formatCurrency(value)}</p>
     </CardContent>
   </Card>
 );
