@@ -223,3 +223,16 @@ export const icmsStSchema = z.object({
 });
 
 export type IcmsStFormData = z.infer<typeof icmsStSchema>;
+
+// --- Prestador Lookup Definitions ---
+export interface Prestador {
+  id: string;
+  nome: string;
+  nomeBusca: string;
+  servico: string;
+  tes: string;
+  conta: string;
+  vencimento: string;
+  nfts: 'SIM' | 'NÃO';
+  iss: 'SIM' | 'NÃO';
+}

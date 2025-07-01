@@ -11,6 +11,7 @@ import { TrendingUp, CheckCircle, Clock, AlertTriangle, BarChartHorizontal, User
 import { Skeleton } from "./ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { AdminNotasFiscais } from "./admin-notas-fiscais";
+import { AdminPrestadorLookup } from "./admin-prestador-lookup";
 
 export function AdminDashboard() {
     const [chamados, setChamados] = useState<Chamado[]>([]);
@@ -138,9 +139,10 @@ export function AdminDashboard() {
             </div>
             
              <Tabs defaultValue="chamados">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="chamados">Gerenciar Chamados</TabsTrigger>
                     <TabsTrigger value="notas">Acompanhar Boletos</TabsTrigger>
+                    <TabsTrigger value="prestador">Consulta Prestador</TabsTrigger>
                 </TabsList>
                 <TabsContent value="chamados">
                     <Card>
@@ -157,6 +159,9 @@ export function AdminDashboard() {
                 </TabsContent>
                 <TabsContent value="notas">
                     <AdminNotasFiscais />
+                </TabsContent>
+                <TabsContent value="prestador">
+                     <AdminPrestadorLookup />
                 </TabsContent>
             </Tabs>
         </div>
