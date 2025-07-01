@@ -62,7 +62,7 @@ export default function CalculoIcmsSt() {
   const form = useForm<IcmsStFormData>({
     resolver: zodResolver(icmsStSchema),
     defaultValues: {
-      operationType: "iva",
+      operationType: "compra",
       ncm: "",
       valorMercadoria: "",
       valorFrete: "",
@@ -112,7 +112,7 @@ export default function CalculoIcmsSt() {
       valorTotalNota = parseLocaleString(data.valorMercadoria) + valorFrete + valorSt;
     }
     
-    const basePisCofins = data.operationType === 'iva'
+    const basePisCofins = data.operationType === 'compra'
         ? baseIcmsProprio - valorIcmsProprio
         : 0;
 
@@ -148,9 +148,9 @@ export default function CalculoIcmsSt() {
     };
     
     const getOperationLabel = (type: string) => {
-        if (type === 'iva') return 'Venda';
+        if (type === 'compra') return 'Compra';
         if (type === 'transferencia') return 'Transferência';
-        if (type === 'pecas') return 'Compra de Peças';
+        if (type === 'pecas') return 'Peças';
         return 'N/A';
     };
 
@@ -196,7 +196,7 @@ export default function CalculoIcmsSt() {
     printRow(y += 7, "Valor IPI:", formatCurrency(result.valorIpi));
     printRow(y += 7, "Base de Cálculo ST:", formatCurrency(result.baseSt));
     printRow(y += 7, "Valor do ICMS-ST:", formatCurrency(result.valorSt));
-    if (lastCalcData.operationType === 'iva') {
+    if (lastCalcData.operationType === 'compra') {
       printRow(y += 7, "Base PIS/COFINS:", formatCurrency(result.basePisCofins));
     }
     
@@ -262,10 +262,10 @@ export default function CalculoIcmsSt() {
                       >
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
-                            <RadioGroupItem value="iva" id="op-iva" />
+                            <RadioGroupItem value="compra" id="op-compra" />
                           </FormControl>
-                          <FormLabel htmlFor="op-iva" className="font-normal cursor-pointer">
-                            Venda
+                          <FormLabel htmlFor="op-compra" className="font-normal cursor-pointer">
+                            Compra
                           </FormLabel>
                         </FormItem>
                          <FormItem className="flex items-center space-x-3 space-y-0">
@@ -273,7 +273,7 @@ export default function CalculoIcmsSt() {
                             <RadioGroupItem value="pecas" id="op-pecas" />
                           </FormControl>
                           <FormLabel htmlFor="op-pecas" className="font-normal cursor-pointer">
-                            Compra de Peças
+                            Peças
                           </FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
@@ -383,7 +383,7 @@ export default function CalculoIcmsSt() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <ResultCard title="Base de Cálculo ST" value={result.baseSt} />
             <ResultCard title="Valor do ICMS-ST" value={result.valorSt} isPrimary />
-            {lastCalcData.operationType === 'iva' && (
+            {lastCalcData.operationType === 'compra' && (
               <ResultCard title="Base PIS/COFINS" value={result.basePisCofins} />
             )}
             <ResultCard title="Valor Total da Nota" value={result.valorTotalNota} isPrimary />
