@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase, Building } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
@@ -64,6 +64,7 @@ export default function CalculoIcmsSt() {
     defaultValues: {
       operationType: "compra",
       ncm: "",
+      fornecedor: "",
       valorMercadoria: "",
       valorFrete: "",
       aliqIpi: "",
@@ -170,6 +171,7 @@ export default function CalculoIcmsSt() {
     doc.setFontSize(11);
     let y = 50;
     printRow(y, "Tipo de Operação:", getOperationLabel(lastCalcData.operationType));
+    printRow(y += 7, "Fornecedor:", lastCalcData.fornecedor || "N/A");
     printRow(y += 7, "NCM:", lastCalcData.ncm || "N/A");
 
     if (lastCalcData.operationType === 'pecas') {
@@ -308,6 +310,13 @@ export default function CalculoIcmsSt() {
                   <FormItem>
                     <FormLabel>NCM</FormLabel>
                     <FormControl><Input placeholder="84439933" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="fornecedor" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fornecedor</FormLabel>
+                    <div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="Nome do fornecedor" className="pl-9" {...field} /></FormControl></div>
                     <FormMessage />
                   </FormItem>
                 )} />

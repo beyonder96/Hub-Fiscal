@@ -203,6 +203,7 @@ const numericString = (errorMessage: string) =>
 export const icmsStSchema = z.object({
   operationType: z.enum(['compra', 'transferencia', 'pecas'], { required_error: "Selecione o tipo de operação." }),
   ncm: z.string().optional(),
+  fornecedor: z.string().optional(),
   valorMercadoria: numericString("Este campo é obrigatório."),
   valorFrete: numericString("Valor inválido.").optional().or(z.literal('')),
   valorIpi: numericString("Valor inválido.").optional().or(z.literal('')),
