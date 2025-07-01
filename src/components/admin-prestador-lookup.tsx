@@ -1,104 +1,366 @@
 
 "use client";
 
-import { useState } from "react";
-import type { Prestador } from "@/lib/definitions";
-import { findPrestador } from "@/lib/prestador-data";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { Prestador, PrestadorFormData } from "@/lib/definitions";
+import { prestadorSchema } from "@/lib/definitions";
+import { initialPrestadores } from "@/lib/prestador-data";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, Building, SearchX } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Search, Building, SearchX, PlusCircle, Pencil, Trash2, Link as LinkIcon, Briefcase, FileText, Landmark, Percent, CalendarDays, Key, MapPin, Mail, FileCheck2, User, Users, ShieldQuestion } from "lucide-react";
 
-const InfoBox = ({ label, value, className }: { label: string, value?: string, className?: string }) => (
-    <div className={className}>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
-        <p className="text-lg font-mono font-semibold text-foreground mt-1 truncate">{value || '---'}</p>
+const InfoBox = ({ label, value, icon, className }: { label: string; value?: string; icon: React.ElementType; className?: string }) => {
+  const Icon = icon;
+  return (
+    <div className={cn("flex items-start gap-3 rounded-lg bg-muted/50 p-3", className)}>
+        <Icon className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+        <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
+            <p className="text-base font-medium text-foreground mt-1 break-words">{value || '---'}</p>
+        </div>
     </div>
-);
+  )
+};
+
+const BooleanBadge = ({ label, value }: { label: string, value?: string }) => {
+  if (!value) return null;
+  const isYes = value === 'SIM';
+  return (
+    <Badge variant={isYes ? 'default' : 'secondary'} className="text-xs">
+      {label}: {value}
+    </Badge>
+  )
+};
 
 export function AdminPrestadorLookup() {
-    const [query, setQuery] = useState("");
-    const [result, setResult] = useState<Prestador | null>(null);
-    const [searched, setSearched] = useState(false);
-    const { toast } = useToast();
+  const [query, setQuery] = useState("");
+  const [prestadores, setPrestadores] = useState<Prestador[]>([]);
+  const [selectedPrestador, setSelectedPrestador] = useState<Prestador | null>(null);
+  const [searched, setSearched] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPrestador, setEditingPrestador] = useState<Prestador | null>(null);
+  const { toast } = useToast();
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        const found = findPrestador(query);
-        setResult(found || null);
-        setSearched(true);
-    };
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("prestadores");
+      if (stored) {
+        setPrestadores(JSON.parse(stored));
+      } else {
+        const fullInitialData = initialPrestadores.map((p, index) => ({
+          ...p,
+          id: p.fornecedor || `gen_${index}`,
+          nomeBusca: p.nome.toLowerCase()
+        }));
+        setPrestadores(fullInitialData);
+        localStorage.setItem("prestadores", JSON.stringify(fullInitialData));
+      }
+    } catch (error) {
+      console.error("Failed to load prestadores", error);
+    }
+  }, []);
 
-    const handleCheckAuthenticity = () => {
-        toast({ title: "Funcionalidade não implementada.", description: "A checagem de autenticidade será adicionada em uma futura versão." });
-    };
+  const savePrestadores = (updatedPrestadores: Prestador[]) => {
+    setPrestadores(updatedPrestadores);
+    localStorage.setItem("prestadores", JSON.stringify(updatedPrestadores));
+  };
 
-    const handleGenerateNfts = () => {
-        toast({ title: "Funcionalidade não implementada.", description: "A geração de NFTS será adicionada em uma futura versão." });
-    };
+  const form = useForm<PrestadorFormData>({
+    resolver: zodResolver(prestadorSchema),
+    defaultValues: {
+      empresa: 'MATRIZ',
+      nome: '',
+      fornecedor: '',
+      descricao: '',
+      servico: '',
+      tes: '',
+      conta: '',
+      vencimento: '',
+      municipio: '',
+      nfts: 'NÃO',
+      simplesNacional: 'NÃO',
+      iss: 'NÃO',
+      ir: 'NÃO',
+      pcc: 'NÃO',
+      inss: 'NÃO',
+      codIr: '',
+      codPcc: '',
+      email: '',
+      autenticidadeUrl: '',
+    }
+  });
 
-    return (
-        <Card>
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query) {
+      setSelectedPrestador(null);
+      setSearched(false);
+      return;
+    }
+    const lowerCaseQuery = query.toLowerCase();
+    const found = prestadores.find(p => p.nome.toLowerCase().includes(lowerCaseQuery) || p.nomeBusca.toLowerCase().includes(lowerCaseQuery));
+    setSelectedPrestador(found || null);
+    setSearched(true);
+  };
+  
+  const handleOpenForm = (prestador: Prestador | null) => {
+    setEditingPrestador(prestador);
+    if (prestador) {
+      form.reset(prestador);
+    } else {
+      form.reset();
+    }
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = prestadores.filter(p => p.id !== id);
+    savePrestadores(updated);
+    toast({ variant: 'destructive', title: 'Prestador excluído com sucesso!' });
+    if (selectedPrestador?.id === id) {
+      setSelectedPrestador(null);
+    }
+  };
+
+  const onSubmit = (data: PrestadorFormData) => {
+    let updatedPrestadores;
+    if (editingPrestador) {
+      // Update
+      const updatedPrestador = { ...editingPrestador, ...data };
+      updatedPrestadores = prestadores.map(p => p.id === editingPrestador.id ? updatedPrestador : p);
+      setSelectedPrestador(updatedPrestador);
+      toast({ title: "Prestador atualizado com sucesso!" });
+    } else {
+      // Create
+      const newPrestador: Prestador = {
+        ...data,
+        id: data.fornecedor || `gen_${new Date().getTime()}`,
+        nomeBusca: data.nome.toLowerCase()
+      };
+      updatedPrestadores = [newPrestador, ...prestadores];
+      toast({ title: "Prestador adicionado com sucesso!" });
+    }
+    savePrestadores(updatedPrestadores);
+    setIsFormOpen(false);
+    setEditingPrestador(null);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Cadastro de Prestadores</CardTitle>
+            <CardDescription>
+              Pesquise, adicione, edite ou exclua prestadores de serviço.
+            </CardDescription>
+          </div>
+          <Button onClick={() => handleOpenForm(null)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar Prestador
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+          <div className="relative flex-grow">
+            <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Digite o nome da empresa para pesquisar..."
+              className="pl-10"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <Button type="submit">
+            <Search className="mr-2 h-4 w-4" />
+            Pesquisar
+          </Button>
+        </form>
+
+        {searched && !selectedPrestador && (
+          <div className="text-center py-10 border-2 border-dashed rounded-lg">
+            <SearchX className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+            <p className="font-semibold">Nenhum prestador encontrado</p>
+            <p className="text-sm text-muted-foreground">Verifique o nome digitado e tente novamente.</p>
+          </div>
+        )}
+
+        {selectedPrestador && (
+          <Card className="border-primary/20 shadow-lg animate-in fade-in-50 duration-500">
             <CardHeader>
-                <CardTitle>Consulta de Cadastro de Prestador</CardTitle>
-                <CardDescription>
-                    Digite o nome ou parte do nome da empresa para consultar os dados de cadastro.
-                </CardDescription>
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <CardTitle className="text-2xl text-primary">{selectedPrestador.nome}</CardTitle>
+                  <CardDescription>Fornecedor: {selectedPrestador.fornecedor}</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="icon" onClick={() => handleOpenForm(selectedPrestador)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                   <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. Isso excluirá permanentemente o prestador
+                          "{selectedPrestador.nome}".
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(selectedPrestador.id)}>
+                          Sim, excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-                    <div className="relative flex-grow">
-                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                            placeholder="Digite o nome da empresa..."
-                            className="pl-10"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                        />
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <InfoBox label="Empresa" value={selectedPrestador.empresa} icon={Briefcase} />
+                  <InfoBox label="Descrição do Serviço" value={selectedPrestador.descricao} icon={FileText} className="md:col-span-2" />
+                  <InfoBox label="Produto/Serviço" value={selectedPrestador.servico} icon={Key} />
+                  <InfoBox label="TES" value={selectedPrestador.tes} icon={Key} />
+                  <InfoBox label="Conta" value={selectedPrestador.conta} icon={Landmark} />
+                  <InfoBox label="Vencimento" value={selectedPrestador.vencimento} icon={CalendarDays} />
+                  <InfoBox label="Município" value={selectedPrestador.municipio} icon={MapPin} />
+                  <InfoBox label="Email" value={selectedPrestador.email} icon={Mail} />
+                  <div className="flex items-center gap-2 md:col-span-3">
+                    <BooleanBadge label="NFTS" value={selectedPrestador.nfts} />
+                    <BooleanBadge label="Simples Nacional" value={selectedPrestador.simplesNacional} />
+                  </div>
+              </div>
+              <div>
+                  <h4 className="font-semibold mb-2 text-primary flex items-center gap-2"><Percent className="h-4 w-4"/>Retenções</h4>
+                  <div className="p-4 rounded-lg bg-muted/50 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <Label>ISS</Label>
+                      <p className="font-mono font-semibold">{selectedPrestador.iss || 'NÃO'}</p>
                     </div>
-                    <Button type="submit">
-                        <Search className="mr-2 h-4 w-4" />
-                        Pesquisar
-                    </Button>
-                </form>
-
-                {searched && !result && (
-                    <div className="text-center py-10 border-2 border-dashed rounded-lg">
-                        <SearchX className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                        <p className="font-semibold">Nenhum prestador encontrado</p>
-                        <p className="text-sm text-muted-foreground">Verifique o nome digitado e tente novamente.</p>
+                     <div className="space-y-1">
+                      <Label>IR</Label>
+                      <p className="font-mono font-semibold">{selectedPrestador.ir || 'NÃO'}</p>
                     </div>
-                )}
-
-                {result && (
-                    <div className="border rounded-lg p-4 space-y-4 animate-in fade-in-50 duration-500">
-                        <div className="text-center border-b pb-2">
-                           <p className="text-sm text-muted-foreground">Nome da Empresa</p>
-                           <p className="text-2xl font-bold text-primary">{result.nome}</p>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
-                            <InfoBox label="Fornecedor" value={result.id} />
-                            <InfoBox label="Serviço" value={result.servico} />
-                            <InfoBox label="TES" value={result.tes} />
-                            <InfoBox label="Conta" value={result.conta} className="md:col-span-2 lg:col-span-1" />
-                            <InfoBox label="Vencimento" value={result.vencimento} className="col-span-2 lg:col-span-1" />
-                        </div>
-                         <div className="grid grid-cols-2 gap-4 text-center border-t pt-4">
-                            <InfoBox label="NFTS" value={result.nfts} />
-                            <InfoBox label="ISS" value={result.iss} />
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                            <Button variant="outline" className="w-full" onClick={handleCheckAuthenticity}>
-                                Checar Autenticidade
-                            </Button>
-                            <Button className="w-full" onClick={handleGenerateNfts}>
-                                Gerar NFTS
-                            </Button>
-                        </div>
+                     <div className="space-y-1">
+                      <Label>PCC</Label>
+                      <p className="font-mono font-semibold">{selectedPrestador.pcc || 'NÃO'}</p>
                     </div>
-                )}
+                     <div className="space-y-1">
+                      <Label>INSS</Label>
+                      <p className="font-mono font-semibold">{selectedPrestador.inss || 'NÃO'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Cód. IR</Label>
+                      <p className="font-mono font-semibold">{selectedPrestador.codIr || '---'}</p>
+                    </div>
+                     <div className="space-y-1">
+                      <Label>Cód. PCC</Label>
+                      <p className="font-mono font-semibold">{selectedPrestador.codPcc || '---'}</p>
+                    </div>
+                  </div>
+              </div>
+              {selectedPrestador.autenticidadeUrl && selectedPrestador.autenticidadeUrl !== '-' && (
+                 <Button asChild variant="outline" className="w-full">
+                  <a href={selectedPrestador.autenticidadeUrl} target="_blank" rel="noopener noreferrer">
+                    <LinkIcon className="mr-2 h-4 w-4"/>
+                    Verificar Autenticidade
+                  </a>
+                 </Button>
+              )}
             </CardContent>
-        </Card>
-    );
+          </Card>
+        )}
+      </CardContent>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{editingPrestador ? "Editar Prestador" : "Adicionar Novo Prestador"}</DialogTitle>
+            <DialogDescription>
+              Preencha os campos abaixo com os dados do prestador de serviço.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <ScrollArea className="h-[60vh] p-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField control={form.control} name="empresa" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Empresa</FormLabel>
+                        <FormControl><Input {...field} /></FormControl><FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="nome" render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl><Input {...field} /></FormControl><FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  <FormField control={form.control} name="descricao" render={({ field }) => (
+                      <FormItem><FormLabel>Descrição</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <FormField control={form.control} name="fornecedor" render={({ field }) => (<FormItem><FormLabel>Fornecedor</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="servico" render={({ field }) => (<FormItem><FormLabel>Serviço</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="tes" render={({ field }) => (<FormItem><FormLabel>TES</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="conta" render={({ field }) => (<FormItem><FormLabel>Conta</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="vencimento" render={({ field }) => (<FormItem><FormLabel>Vencimento</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="municipio" render={({ field }) => (<FormItem><FormLabel>Município</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-2">Impostos e Retenções</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <FormField control={form.control} name="nfts" render={({ field }) => (<FormItem><FormLabel>NFTS</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="SIM">SIM</SelectItem><SelectItem value="NÃO">NÃO</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="simplesNacional" render={({ field }) => (<FormItem><FormLabel>Simples Nacional</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="SIM">SIM</SelectItem><SelectItem value="NÃO">NÃO</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="iss" render={({ field }) => (<FormItem><FormLabel>ISS</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="SIM">SIM</SelectItem><SelectItem value="NÃO">NÃO</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="ir" render={({ field }) => (<FormItem><FormLabel>IR</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="SIM">SIM</SelectItem><SelectItem value="NÃO">NÃO</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="pcc" render={({ field }) => (<FormItem><FormLabel>PCC</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="SIM">SIM</SelectItem><SelectItem value="NÃO">NÃO</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="inss" render={({ field }) => (<FormItem><FormLabel>INSS</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="SIM">SIM</SelectItem><SelectItem value="NÃO">NÃO</SelectItem><SelectItem value="PORTO">PORTO</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="codIr" render={({ field }) => (<FormItem><FormLabel>Cód. IR</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="codPcc" render={({ field }) => (<FormItem><FormLabel>Cód. PCC</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                     </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="autenticidadeUrl" render={({ field }) => (<FormItem><FormLabel>URL de Autenticidade</FormLabel><FormControl><Input type="url" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                </div>
+              </ScrollArea>
+              <DialogFooter className="pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                <Button type="submit">Salvar</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
 }

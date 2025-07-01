@@ -225,14 +225,34 @@ export const icmsStSchema = z.object({
 export type IcmsStFormData = z.infer<typeof icmsStSchema>;
 
 // --- Prestador Lookup Definitions ---
-export interface Prestador {
+const SimNaoEnum = z.enum(['SIM', 'NÃO', '']).optional();
+
+export const prestadorSchema = z.object({
+  id: z.string().optional(),
+  empresa: z.string().min(1, 'Empresa é obrigatória.'),
+  nome: z.string().min(1, 'Nome é obrigatório.'),
+  fornecedor: z.string().optional(),
+  descricao: z.string().optional(),
+  servico: z.string().optional(),
+  tes: z.string().optional(),
+  conta: z.string().optional(),
+  vencimento: z.string().optional(),
+  municipio: z.string().optional(),
+  nfts: SimNaoEnum,
+  simplesNacional: SimNaoEnum,
+  iss: SimNaoEnum,
+  ir: SimNaoEnum,
+  pcc: SimNaoEnum,
+  inss: z.enum(['SIM', 'NÃO', 'PORTO', '']).optional(),
+  codIr: z.string().optional(),
+  codPcc: z.string().optional(),
+  email: z.string().optional(),
+  autenticidadeUrl: z.string().optional(),
+});
+
+export type PrestadorFormData = z.infer<typeof prestadorSchema>;
+
+export type Prestador = PrestadorFormData & {
   id: string;
-  nome: string;
   nomeBusca: string;
-  servico: string;
-  tes: string;
-  conta: string;
-  vencimento: string;
-  nfts: 'SIM' | 'NÃO';
-  iss: 'SIM' | 'NÃO';
-}
+};
