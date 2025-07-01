@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -61,6 +62,7 @@ export default function CalculoIcmsSt() {
   const form = useForm<IcmsStFormData>({
     resolver: zodResolver(icmsStSchema),
     defaultValues: {
+      operationType: "iva",
       ncm: "",
       valorMercadoria: "",
       valorFrete: "",
@@ -97,7 +99,9 @@ export default function CalculoIcmsSt() {
 
     const valorTotalNota = valorMercadoria + valorFrete + valorIpi + valorSt;
     
-    const basePisCofins = baseIcmsProprio - valorIcmsProprio;
+    const basePisCofins = data.operationType === 'iva'
+        ? baseIcmsProprio - valorIcmsProprio + valorIpi
+        : 0;
 
     setResult({
       baseSt,
@@ -139,7 +143,8 @@ export default function CalculoIcmsSt() {
 
     doc.setFontSize(11);
     let y = 50;
-    printRow(y, "NCM:", lastCalcData.ncm || "N/A");
+    printRow(y, "Tipo de Operação:", lastCalcData.operationType === 'iva' ? 'Venda (com IVA)' : 'Transferência');
+    printRow(y += 7, "NCM:", lastCalcData.ncm || "N/A");
     printRow(y += 7, "Valor da Mercadoria:", formatCurrency(parseLocaleString(lastCalcData.valorMercadoria)));
     printRow(y += 7, "Valor do Frete:", formatCurrency(parseLocaleString(lastCalcData.valorFrete || "0")));
     printRow(y += 7, "Alíquota IPI:", formatPercent(lastCalcData.aliqIpi));
@@ -160,7 +165,9 @@ export default function CalculoIcmsSt() {
     printRow(y += 7, "Valor IPI:", formatCurrency(result.valorIpi));
     printRow(y += 7, "Base de Cálculo ST:", formatCurrency(result.baseSt));
     printRow(y += 7, "Valor do ICMS-ST:", formatCurrency(result.valorSt));
-    printRow(y += 7, "Base PIS/COFINS:", formatCurrency(result.basePisCofins));
+    if (lastCalcData.operationType === 'iva') {
+      printRow(y += 7, "Base PIS/COFINS:", formatCurrency(result.basePisCofins));
+    }
     
     y += 10;
     doc.setFontSize(12);
@@ -207,7 +214,45 @@ export default function CalculoIcmsSt() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <FormField
+                control={form.control}
+                name="operationType"
+                render={({ field }) => (
+                  <FormItem className="space-y-3 pb-4 border-b">
+                    <FormLabel className="font-semibold text-lg flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 text-primary" />
+                      Tipo de Operação *
+                    </FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col sm:flex-row gap-4"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="iva" id="op-iva" />
+                          </FormControl>
+                          <FormLabel htmlFor="op-iva" className="font-normal cursor-pointer">
+                            Venda (com IVA/MVA)
+                          </FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="transferencia" id="op-transfer" />
+                          </FormControl>
+                          <FormLabel htmlFor="op-transfer" className="font-normal cursor-pointer">
+                            Transferência
+                          </FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
                  <FormField control={form.control} name="ncm" render={({ field }) => (
                   <FormItem>
                     <FormLabel>NCM</FormLabel>
@@ -287,7 +332,7 @@ export default function CalculoIcmsSt() {
         </Form>
       </Card>
 
-      {result && (
+      {result && lastCalcData && (
         <section className="w-full max-w-4xl mx-auto animate-in fade-in-50 duration-500">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold font-headline">Resultados do Cálculo</h2>
@@ -299,7 +344,9 @@ export default function CalculoIcmsSt() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <ResultCard title="Base de Cálculo ST" value={result.baseSt} />
             <ResultCard title="Valor do ICMS-ST" value={result.valorSt} isPrimary />
-            <ResultCard title="Base PIS/COFINS" value={result.basePisCofins} />
+            {lastCalcData.operationType === 'iva' && (
+              <ResultCard title="Base PIS/COFINS" value={result.basePisCofins} />
+            )}
             <ResultCard title="Valor Total da Nota" value={result.valorTotalNota} isPrimary />
           </div>
         </section>

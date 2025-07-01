@@ -201,6 +201,7 @@ const numericString = (errorMessage: string) =>
   }, { message: "Valor inválido." });
 
 export const icmsStSchema = z.object({
+  operationType: z.enum(['iva', 'transferencia'], { required_error: "Selecione o tipo de operação." }),
   ncm: z.string().optional(),
   valorMercadoria: numericString("Valor da mercadoria é obrigatório."),
   valorFrete: numericString("Valor inválido.").optional().or(z.literal('')),
