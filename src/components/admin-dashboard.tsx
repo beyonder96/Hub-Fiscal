@@ -14,6 +14,7 @@ import { AdminNotasFiscais } from "./admin-notas-fiscais";
 import { AdminPrestadorLookup } from "./admin-prestador-lookup";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { ChangePasswordDialog } from "./change-password-dialog";
 
 
 export function AdminDashboard() {
@@ -109,9 +110,12 @@ export function AdminDashboard() {
     
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-8">
-            <header>
-                <h1 className="text-3xl font-bold tracking-tight font-headline text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">Painel Administrativo</h1>
-                <p className="text-muted-foreground">Gerencie chamados fiscais e monitore o desempenho da equipe.</p>
+            <header className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">Painel Administrativo</h1>
+                    <p className="text-muted-foreground">Gerencie chamados fiscais e monitore o desempenho da equipe.</p>
+                </div>
+                <ChangePasswordDialog />
             </header>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

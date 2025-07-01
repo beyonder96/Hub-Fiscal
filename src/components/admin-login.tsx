@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,19 +12,25 @@ interface AdminLoginProps {
   onLoginSuccess: () => void;
 }
 
-const ADMIN_PASSWORD = "admin";
-
 export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [adminPassword, setAdminPassword] = useState("admin");
+
+  useEffect(() => {
+    const storedPassword = localStorage.getItem("adminPassword");
+    if (storedPassword) {
+      setAdminPassword(storedPassword);
+    }
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     setTimeout(() => {
-      if (password === ADMIN_PASSWORD) {
+      if (password === adminPassword) {
         toast({
           title: "Login bem-sucedido!",
           description: "Bem-vindo ao Painel Administrativo.",
