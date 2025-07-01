@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { IcmsStFormData } from "@/lib/definitions";
 import { icmsStSchema } from "@/lib/definitions";
@@ -12,10 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase, Building } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase, Building, FileText, Search, Clipboard } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { dareSupplierData } from "@/lib/dare-data";
+import { useEffect } from "react";
+import { ScrollArea } from "./ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -46,10 +49,71 @@ const ResultCard = ({ title, value, isPrimary = false }: { title: string, value:
       <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
     </CardHeader>
     <CardContent>
-      <p className="text-3xl font-bold lg:text-2xl">{formatCurrency(value)}</p>
+      <p className="text-2xl font-bold">{formatCurrency(value)}</p>
     </CardContent>
   </Card>
 );
+
+const DareHelper = () => {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<string[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (query.trim().length > 2) {
+      const lowerCaseQuery = query.toLowerCase();
+      const filtered = dareSupplierData.filter(line => line.toLowerCase().includes(lowerCaseQuery));
+      setResults(filtered);
+    } else {
+      setResults([]);
+    }
+  }, [query]);
+  
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copiado!", description: "Dados do fornecedor copiados para a área de transferência." });
+  }
+
+  return (
+    <Card className="w-full max-w-4xl mx-auto shadow-lg border">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-2xl font-headline">
+          <Search className="h-6 w-6 text-primary" />
+          Consulta de Fornecedor para DARE
+        </CardTitle>
+         <CardDescription>
+            Pesquise pelo nome, CNPJ ou IE para encontrar os dados completos do fornecedor.
+          </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Input 
+          value={query} 
+          onChange={e => setQuery(e.target.value)} 
+          placeholder="Digite parte do nome, CNPJ ou IE do fornecedor..." 
+        />
+        <ScrollArea className="h-48 mt-4 border rounded-md">
+          {results.length > 0 ? (
+            <div className="p-2">
+              {results.map((line, i) => (
+                <div key={i} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
+                  <span className="text-sm font-mono">{line}</span>
+                  <Button size="icon" variant="ghost" onClick={() => handleCopy(line)} title="Copiar">
+                    <Clipboard className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+              <p>Nenhum resultado. Digite ao menos 3 caracteres.</p>
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  )
+}
+
 
 export default function CalculoIcmsSt() {
   const [result, setResult] = useState<CalculationResult | null>(null);
@@ -390,7 +454,7 @@ export default function CalculoIcmsSt() {
                 )} />
               </div>
             </CardContent>
-            <CardFooter className="gap-4">
+            <CardFooter className="flex-wrap gap-4">
               <Button type="submit" className="w-full sm:w-auto flex-1 bg-gradient-to-r from-accent to-primary text-white font-bold">
                 <Calculator className="mr-2 h-4 w-4" />
                 Calcular
@@ -398,6 +462,12 @@ export default function CalculoIcmsSt() {
               <Button type="button" variant="outline" onClick={handleClear} className="w-full sm:w-auto">
                 <RotateCw className="mr-2 h-4 w-4" />
                 Limpar
+              </Button>
+               <Button asChild variant="secondary" className="w-full sm:w-auto flex-1">
+                  <a href="https://www4.fazenda.sp.gov.br/DareICMS/DareAvulso" target="_blank" rel="noopener noreferrer">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Gerar DARE
+                  </a>
               </Button>
             </CardFooter>
           </form>
@@ -476,6 +546,8 @@ export default function CalculoIcmsSt() {
             </Button>
         </CardFooter>
       </Card>
+
+      <DareHelper />
     </div>
   );
 }
