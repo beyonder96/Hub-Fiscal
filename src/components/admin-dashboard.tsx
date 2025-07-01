@@ -25,13 +25,13 @@ export function AdminDashboard() {
     const { toast } = useToast();
 
     const refreshChamados = () => {
+        setIsLoading(true);
         try {
             const storedChamados = localStorage.getItem("chamados");
-            if (storedChamados) {
-                setChamados(JSON.parse(storedChamados));
-            }
+            setChamados(storedChamados ? JSON.parse(storedChamados) : []);
         } catch (error) {
             console.error("Failed to load chamados from localStorage", error);
+            setChamados([]);
         } finally {
             setIsLoading(false);
         }
@@ -39,8 +39,8 @@ export function AdminDashboard() {
 
     useEffect(() => {
         refreshChamados();
-         window.addEventListener('storage', refreshChamados);
-         return () => {
+        window.addEventListener('storage', refreshChamados);
+        return () => {
             window.removeEventListener('storage', refreshChamados);
         };
     }, []);
@@ -50,7 +50,16 @@ export function AdminDashboard() {
             c.id === chamadoId ? { ...c, status: newStatus } : c
         );
         setChamados(updatedChamados);
-        localStorage.setItem("chamados", JSON.stringify(updatedChamados));
+        try {
+            localStorage.setItem("chamados", JSON.stringify(updatedChamados));
+        } catch (error) {
+            console.error("Failed to save chamados to localStorage", error);
+            toast({
+                variant: "destructive",
+                title: "Erro ao salvar",
+                description: "Não foi possível atualizar o status do chamado.",
+            });
+        }
     };
 
     const handleClearCompleted = () => {
@@ -65,11 +74,21 @@ export function AdminDashboard() {
 
         const remainingChamados = chamados.filter(c => c.status !== "Resolvido");
         setChamados(remainingChamados);
-        localStorage.setItem("chamados", JSON.stringify(remainingChamados));
-        toast({
-            title: "Chamados concluídos limpos!",
-            description: `${completedCount} chamado(s) foram removidos da lista.`,
-        });
+        try {
+            localStorage.setItem("chamados", JSON.stringify(remainingChamados));
+            toast({
+                title: "Chamados concluídos limpos!",
+                description: `${completedCount} chamado(s) foram removidos da lista.`,
+            });
+        } catch (error) {
+            console.error("Failed to save chamados to localStorage", error);
+            toast({
+                variant: "destructive",
+                title: "Erro ao limpar chamados",
+                description: "Não foi possível salvar as alterações.",
+            });
+             refreshChamados(); // Revert state if save fails
+        }
     };
 
     const stats = useMemo(() => {

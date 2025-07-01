@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -26,7 +27,7 @@ export default function MeusChamadosPage() {
     setUserChamados([]);
     setSubmittedName(searchName);
 
-    // Simulate fetch from localStorage
+    // Simulate network delay
     setTimeout(() => {
       try {
         const allChamados: Chamado[] = JSON.parse(localStorage.getItem("chamados") || "[]");

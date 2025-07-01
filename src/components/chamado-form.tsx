@@ -71,6 +71,8 @@ export function ChamadoForm() {
 
       const existingChamados: Chamado[] = JSON.parse(localStorage.getItem("chamados") || "[]");
       localStorage.setItem("chamados", JSON.stringify([...existingChamados, newChamado]));
+      // Trigger storage event for other tabs (like the admin dashboard) to update
+      window.dispatchEvent(new Event("storage"));
 
       toast({
         title: "Chamado enviado com sucesso!",
@@ -86,10 +88,11 @@ export function ChamadoForm() {
       }, 1500);
 
     } catch (error) {
+      console.error("Failed to save chamado:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao enviar chamado",
-        description: "Ocorreu um erro. Por favor, tente novamente.",
+        title: "Erro ao salvar chamado",
+        description: "Não foi possível salvar o chamado. Verifique as permissões do navegador.",
       });
       setIsSubmitting(false);
     }
