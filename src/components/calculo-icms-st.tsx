@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { IcmsStFormData } from "@/lib/definitions";
 import { icmsStSchema } from "@/lib/definitions";
-import Papa from "papaparse";
+import jsPDF from "jspdf";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,41 +106,56 @@ export default function CalculoIcmsSt() {
     setLastCalcData(null);
   };
   
-  const handleExport = () => {
+  const handleExportToPdf = () => {
     if (!result || !lastCalcData) {
       alert("Nenhum resultado para exportar.");
       return;
     }
 
-    const dataToExport = [
-      { Campo: "DADOS DE ENTRADA", Valor: ""},
-      { Campo: "NCM", Valor: lastCalcData.ncm || "N/A" },
-      { Campo: "Valor da Mercadoria", Valor: formatCurrency(parseLocaleString(lastCalcData.valorMercadoria)) },
-      { Campo: "Valor do Frete", Valor: formatCurrency(parseLocaleString(lastCalcData.valorFrete || "0")) },
-      { Campo: "Alíquota IPI (%)", Valor: `${parseLocaleString(lastCalcData.aliqIpi || "0")}%` },
-      { Campo: "Alíquota ICMS (%)", Valor: `${parseLocaleString(lastCalcData.aliqIcms)}%` },
-      { Campo: "IVA/MVA (%)", Valor: `${parseLocaleString(lastCalcData.mva)}%` },
-      { Campo: "Alíquota ICMS-ST (%)", Valor: `${parseLocaleString(lastCalcData.aliqIcmsSt)}%` },
-      { Campo: "Redução Base ST (%)", Valor: `${parseLocaleString(lastCalcData.redBaseSt || "0")}%` },
-      { Campo: "", Valor: ""},
-      { Campo: "RESULTADOS DO CÁLCULO", Valor: ""},
-      { Campo: "Valor ICMS Próprio", Valor: formatCurrency(result.valorIcmsProprio) },
-      { Campo: "Valor IPI", Valor: formatCurrency(result.valorIpi) },
-      { Campo: "Base de Cálculo ST", Valor: formatCurrency(result.baseSt) },
-      { Campo: "Valor do ICMS-ST", Valor: formatCurrency(result.valorSt) },
-      { Campo: "Base PIS/COFINS", Valor: formatCurrency(result.basePisCofins) },
-      { Campo: "Valor Total da Nota (com ST)", Valor: formatCurrency(result.valorTotalNota) },
-    ];
+    const doc = new jsPDF();
     
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "relatorio_calculo_icms_st.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const printRow = (y: number, label: string, value: string) => {
+        doc.text(label, 15, y);
+        doc.text(value, 120, y);
+    };
+
+    doc.setFontSize(18);
+    doc.text("Relatório de Cálculo ICMS-ST", 14, 22);
+
+    doc.setFontSize(14);
+    doc.text("Dados de Entrada", 14, 40);
+    doc.line(14, 42, 200, 42); 
+
+    doc.setFontSize(11);
+    let y = 50;
+    printRow(y, "NCM:", lastCalcData.ncm || "N/A");
+    printRow(y += 7, "Valor da Mercadoria:", formatCurrency(parseLocaleString(lastCalcData.valorMercadoria)));
+    printRow(y += 7, "Valor do Frete:", formatCurrency(parseLocaleString(lastCalcData.valorFrete || "0")));
+    printRow(y += 7, "Alíquota IPI:", `${parseLocaleString(lastCalcData.aliqIpi || "0")}%`);
+    printRow(y += 7, "Alíquota ICMS:", `${parseLocaleString(lastCalcData.aliqIcms)}%`);
+    printRow(y += 7, "IVA/MVA:", `${parseLocaleString(lastCalcData.mva)}%`);
+    printRow(y += 7, "Alíquota ICMS-ST:", `${parseLocaleString(lastCalcData.aliqIcmsSt)}%`);
+    printRow(y += 7, "Redução Base ST:", `${parseLocaleString(lastCalcData.redBaseSt || "0")}%`);
+    
+    y += 15;
+
+    doc.setFontSize(14);
+    doc.text("Resultados do Cálculo", 14, y);
+    doc.line(14, y + 2, 200, y + 2);
+    y += 10;
+    
+    doc.setFontSize(11);
+    printRow(y, "Valor ICMS Próprio:", formatCurrency(result.valorIcmsProprio));
+    printRow(y += 7, "Valor IPI:", formatCurrency(result.valorIpi));
+    printRow(y += 7, "Base de Cálculo ST:", formatCurrency(result.baseSt));
+    printRow(y += 7, "Valor do ICMS-ST:", formatCurrency(result.valorSt));
+    printRow(y += 7, "Base PIS/COFINS:", formatCurrency(result.basePisCofins));
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    printRow(y += 10, "Valor Total da Nota (com ST):", formatCurrency(result.valorTotalNota));
+
+    doc.save("relatorio_calculo_icms_st.pdf");
   };
 
   const handleIvaCalculation = () => {
@@ -263,9 +278,9 @@ export default function CalculoIcmsSt() {
         <section className="w-full max-w-4xl mx-auto animate-in fade-in-50 duration-500">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold font-headline">Resultados do Cálculo</h2>
-            <Button variant="outline" onClick={handleExport}>
+            <Button variant="outline" onClick={handleExportToPdf}>
               <FileDown className="mr-2 h-4 w-4" />
-              Exportar para CSV
+              Exportar para PDF
             </Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
