@@ -7,7 +7,7 @@ import { AdminStatCard } from "./admin-stat-card";
 import { AdminChamadosManagement } from "./admin-chamados-management";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
-import { TrendingUp, CheckCircle, Clock, AlertTriangle, BarChartHorizontal, Users, Trash2 } from "lucide-react";
+import { TrendingUp, CheckCircle, Clock, AlertTriangle, BarChartHorizontal, Users, Trash2, BookOpen } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { AdminNotasFiscais } from "./admin-notas-fiscais";
@@ -187,12 +187,13 @@ export function AdminDashboard() {
             </div>
             
              <Tabs defaultValue="chamados">
-                <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+                <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                     <TabsTrigger value="chamados">Gerenciar Chamados</TabsTrigger>
                     <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
                     <TabsTrigger value="notas">Acompanhar Boletos</TabsTrigger>
                     <TabsTrigger value="prestador">Consulta Prestador</TabsTrigger>
                     <TabsTrigger value="aliquotas">Alíquotas</TabsTrigger>
+                    <TabsTrigger value="manuais">Manuais</TabsTrigger>
                 </TabsList>
                 <TabsContent value="chamados">
                     <Card>
@@ -225,6 +226,18 @@ export function AdminDashboard() {
                 </TabsContent>
                 <TabsContent value="aliquotas">
                     <AdminAliquotas />
+                </TabsContent>
+                <TabsContent value="manuais">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Manuais e Documentação</CardTitle>
+                            <CardDescription>Esta área será desenvolvida em breve.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center justify-center text-center p-10">
+                            <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground">Em breve, você encontrará manuais e guias aqui.</p>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
             </Tabs>
         </div>
