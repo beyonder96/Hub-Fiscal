@@ -15,6 +15,7 @@ import { AdminPrestadorLookup } from "./admin-prestador-lookup";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ChangePasswordDialog } from "./change-password-dialog";
+import { AdminTasks } from "./admin-tasks";
 
 
 export function AdminDashboard() {
@@ -166,8 +167,9 @@ export function AdminDashboard() {
             </div>
             
              <Tabs defaultValue="chamados">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="chamados">Gerenciar Chamados</TabsTrigger>
+                    <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
                     <TabsTrigger value="notas">Acompanhar Boletos</TabsTrigger>
                     <TabsTrigger value="prestador">Consulta Prestador</TabsTrigger>
                 </TabsList>
@@ -190,6 +192,9 @@ export function AdminDashboard() {
                             />
                         </CardContent>
                     </Card>
+                </TabsContent>
+                 <TabsContent value="tarefas">
+                     <AdminTasks />
                 </TabsContent>
                 <TabsContent value="notas">
                     <AdminNotasFiscais />
