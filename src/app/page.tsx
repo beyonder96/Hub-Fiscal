@@ -1,18 +1,10 @@
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Calculator, FileCode, FileSpreadsheet, FileText, Search } from "lucide-react";
+import { ArrowRight, Calculator, FileCode, FileSpreadsheet, Search, Users, Undo2 } from "lucide-react";
 import Link from "next/link";
 
 const features = [
-  {
-    icon: <FileText className="h-8 w-8 text-primary" />,
-    title: "Abrir Chamado",
-    description: "Registre uma nova solicitação de suporte para nossa equipe fiscal.",
-    href: "/chamados",
-    bgColor: "bg-purple-500/10",
-    textColor: "text-purple-300"
-  },
   {
     icon: <Calculator className="h-8 w-8 text-primary" />,
     title: "Consulta de Alíquota",
@@ -20,6 +12,14 @@ const features = [
     href: "/consulta-aliquota",
     bgColor: "bg-blue-500/10",
     textColor: "text-blue-300"
+  },
+  {
+    icon: <Users className="h-8 w-8 text-primary" />,
+    title: "Consulta de Prestador",
+    description: "Pesquise, edite e gerencie os dados dos prestadores de serviço.",
+    href: "/chamados",
+    bgColor: "bg-purple-500/10",
+    textColor: "text-purple-300"
   },
   {
     icon: <FileCode className="h-8 w-8 text-primary" />,
@@ -45,6 +45,14 @@ const features = [
     bgColor: "bg-yellow-500/10",
     textColor: "text-yellow-300"
   },
+  {
+    icon: <Undo2 className="h-8 w-8 text-primary" />,
+    title: "Manual de Devolução",
+    description: "Guia completo sobre o procedimento de devolução de mercadorias.",
+    href: "/devolucao",
+    bgColor: "bg-red-500/10",
+    textColor: "text-red-300"
+  },
 ];
 
 export default function Home() {
@@ -67,14 +75,14 @@ export default function Home() {
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <Button size="lg" className="bg-gradient-to-r from-accent to-primary text-white font-bold" asChild>
-                <Link href="/chamados">
-                  Abrir Chamado
+                <Link href="/consulta-aliquota">
+                  Consultar Alíquota
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/meus-chamados">
-                  Ver Meus Chamados
+                <Link href="/pesquisa-tes">
+                  Pesquisar TES
                 </Link>
               </Button>
             </div>

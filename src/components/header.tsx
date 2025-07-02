@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookMarked, Calculator, FileCode, FileSpreadsheet, FileText, Search, Shield, UserCheck } from "lucide-react";
+import { BookMarked, Calculator, FileCode, FileSpreadsheet, Search, Shield, Users, Undo2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,16 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const mainLinks = [
-  { href: "/chamados", label: "Abrir Chamado", icon: FileText },
-  { href: "/meus-chamados", label: "Meus Chamados", icon: UserCheck },
-];
-
 const toolLinks = [
   { href: "/consulta-aliquota", label: "Consulta Alíquota", icon: Calculator },
   { href: "/validador-xml", label: "Validador XML", icon: FileCode },
   { href: "/calculo-icms-st", label: "Cálculo ICMS-ST", icon: FileSpreadsheet },
   { href: "/pesquisa-tes", label: "Pesquisa de TES", icon: Search },
+  { href: "/chamados", label: "Consulta Prestador", icon: Users },
+  { href: "/devolucao", label: "Manual Devolução", icon: Undo2 },
 ];
 
 export function Header() {
@@ -40,17 +37,6 @@ export function Header() {
             </h1>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
-            {mainLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Button asChild variant={isActive ? "secondary" : "ghost"} key={link.href}>
-                  <Link href={link.href}>
-                    <link.icon className="h-4 w-4 mr-2" />
-                    {link.label}
-                  </Link>
-                </Button>
-              );
-            })}
              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost">

@@ -48,7 +48,7 @@ const BooleanBadge = ({ label, value }: { label: string, value?: string }) => {
   )
 };
 
-export function AdminPrestadorLookup() {
+export function PrestadorLookup() {
   const [query, setQuery] = useState("");
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [selectedPrestador, setSelectedPrestador] = useState<Prestador | null>(null);
