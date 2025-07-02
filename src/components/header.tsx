@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -5,12 +6,6 @@ import { usePathname } from 'next/navigation';
 import { BookMarked, Calculator, FileCode, FileSpreadsheet, Search, Shield, Users, Undo2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const toolLinks = [
   { href: "/consulta-aliquota", label: "Consulta Alíquota", icon: Calculator },
@@ -37,24 +32,14 @@ export function Header() {
             </h1>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
-             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost">
-                  Ferramentas
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {toolLinks.map((link) => (
-                   <DropdownMenuItem key={link.href} asChild>
-                     <Link href={link.href}>
-                        <link.icon className="h-4 w-4 mr-2" />
-                        {link.label}
-                      </Link>
-                   </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {toolLinks.map((link) => (
+              <Button asChild variant={pathname === link.href ? "secondary" : "ghost"} key={link.href} size="sm">
+                <Link href={link.href}>
+                  <link.icon className="h-4 w-4" />
+                  {link.label}
+                </Link>
+              </Button>
+            ))}
           </nav>
         </div>
         <div className="flex items-center gap-3">
@@ -70,7 +55,3 @@ export function Header() {
     </header>
   );
 }
-
-const ChevronDown = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m6 9 6 6 6-6"/></svg>
-)
