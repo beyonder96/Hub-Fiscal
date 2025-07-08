@@ -314,7 +314,6 @@ export default function CalculoIcmsSt() {
       printRow("Alíquota ICMS:", formatPercent(calc.formData.aliqIcms));
       printRow("IVA/MVA:", formatPercent(calc.formData.mva));
       printRow("Alíquota ICMS-ST:", formatPercent(calc.formData.aliqIcmsSt));
-      printRow("Redução Base ST:", formatPercent(calc.formData.redBaseSt));
       y += 5;
       
       doc.setFontSize(12);
@@ -458,13 +457,10 @@ export default function CalculoIcmsSt() {
               <FormField control={form.control} name="redBaseSt" render={({ field }) => (<FormItem><FormLabel className="flex items-center gap-1">Redução Base ST (%)<TooltipProvider><Tooltip><TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent><p>Ex: Alíquota interna de 18% com redução para 12%, a redução é de 33.33%.</p></TooltipContent></Tooltip></TooltipProvider></FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="33,33" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
             </div>
           </CardContent>
-          <CardFooter className="flex-wrap gap-4">
-            <Button type="submit" className="w-full sm:w-auto flex-1 bg-gradient-to-r from-accent to-primary text-white font-bold">
+          <CardFooter>
+            <Button type="submit" className="w-full bg-gradient-to-r from-accent to-primary text-white font-bold">
               <Calculator className="mr-2 h-4 w-4" />
               {currentCalculationIndex < numberOfCalculations - 1 ? `Salvar e Próximo (${currentCalculationIndex + 2}/${numberOfCalculations})` : 'Finalizar e Ver Resultados'}
-            </Button>
-            <Button asChild variant="secondary" className="w-full sm:w-auto flex-1">
-              <a href="https://www4.fazenda.sp.gov.br/DareICMS/DareAvulso" target="_blank" rel="noopener noreferrer"><FileText className="mr-2 h-4 w-4" />Gerar DARE</a>
             </Button>
           </CardFooter>
         </form>
@@ -478,9 +474,12 @@ export default function CalculoIcmsSt() {
       <section className="w-full max-w-4xl mx-auto animate-in fade-in-50 duration-500 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-2xl font-bold font-headline">Resultados Consolidados</h2>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex gap-2 w-full sm:w-auto flex-wrap">
             <Button variant="outline" onClick={handleNewFullCalculation} className="flex-1"><PlusCircle className="mr-2 h-4 w-4" />Novo Cálculo</Button>
             <Button onClick={handleExportToPdf} className="flex-1"><FileDown className="mr-2 h-4 w-4" />Exportar PDF</Button>
+            <Button asChild variant="secondary" className="flex-1">
+              <a href="https://www4.fazenda.sp.gov.br/DareICMS/DareAvulso" target="_blank" rel="noopener noreferrer"><FileText className="mr-2 h-4 w-4" />Gerar DARE</a>
+            </Button>
           </div>
         </div>
         <Card>
@@ -547,3 +546,4 @@ export default function CalculoIcmsSt() {
   );
 }
 
+    
