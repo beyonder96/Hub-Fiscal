@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase, Building, FileText, Search, Clipboard, ArrowRight, PlusCircle } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase, Building, FileText, Search, Clipboard, ArrowRight, PlusCircle, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
@@ -125,6 +125,7 @@ export default function CalculoIcmsSt() {
   const [numberOfCalculations, setNumberOfCalculations] = useState(1);
   const [currentCalculationIndex, setCurrentCalculationIndex] = useState(0);
   const [completedCalculations, setCompletedCalculations] = useState<CompletedCalculation[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   
   const [ivaOriginal, setIvaOriginal] = useState("");
   const [aliqInter, setAliqInter] = useState("");
@@ -222,25 +223,37 @@ export default function CalculoIcmsSt() {
       valorIpi
     };
 
-    const newCompletedCalc: CompletedCalculation = { formData: data, result };
-    const updatedCalculations = [...completedCalculations, newCompletedCalc];
-    setCompletedCalculations(updatedCalculations);
+    const completedCalc: CompletedCalculation = { formData: data, result };
 
-    if (currentCalculationIndex < numberOfCalculations - 1) {
-      setCurrentCalculationIndex(prev => prev + 1);
-      toast({
-        title: `Cálculo ${currentCalculationIndex + 1} salvo!`,
-        description: `Preencha os dados para o cálculo ${currentCalculationIndex + 2}.`
-      });
-      form.reset({
-        ...data, // Mantém dados como NCM, fornecedor, etc.
-        items: "",
-        valorMercadoria: "",
-        valorFrete: "",
-        valorIpi: ""
-      });
+    if (editingIndex !== null) {
+        const updatedCalculations = completedCalculations.map((calc, index) => 
+            index === editingIndex ? completedCalc : calc
+        );
+        setCompletedCalculations(updatedCalculations);
+        setEditingIndex(null);
+        setStep('results');
+        toast({ title: `Cálculo ${editingIndex + 1} atualizado!` });
+        form.reset();
     } else {
-      setStep('results');
+        const updatedCalculations = [...completedCalculations, completedCalc];
+        setCompletedCalculations(updatedCalculations);
+
+        if (currentCalculationIndex < numberOfCalculations - 1) {
+            setCurrentCalculationIndex(prev => prev + 1);
+            toast({
+                title: `Cálculo ${currentCalculationIndex + 1} salvo!`,
+                description: `Preencha os dados para o cálculo ${currentCalculationIndex + 2}.`
+            });
+            form.reset({
+                ...data,
+                items: "",
+                valorMercadoria: "",
+                valorFrete: "",
+                valorIpi: ""
+            });
+        } else {
+            setStep('results');
+        }
     }
   };
   
@@ -284,16 +297,18 @@ export default function CalculoIcmsSt() {
       doc.text(`Cálculo ${index + 1} de ${completedCalculations.length}`, 14, y);
       y += 8;
       
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      checkNewPage(12);
-      doc.text(`Itens Aplicados:`, 15, y);
-      y += 6;
-      doc.setFont("helvetica", "normal");
-      const itemLines = doc.splitTextToSize(calc.formData.items, 180);
-      checkNewPage(itemLines.length * 5 + 5);
-      doc.text(itemLines, 15, y);
-      y += itemLines.length * 5 + 5;
+      if (calc.formData.items) {
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        checkNewPage(12);
+        doc.text(`Itens Aplicados:`, 15, y);
+        y += 6;
+        doc.setFont("helvetica", "normal");
+        const itemLines = doc.splitTextToSize(calc.formData.items, 180);
+        checkNewPage(itemLines.length * 5 + 5);
+        doc.text(itemLines, 15, y);
+        y += itemLines.length * 5 + 5;
+      }
 
       printRow("Tipo de Operação:", calc.formData.operationType);
       printRow("Fornecedor:", calc.formData.fornecedor || "N/A");
@@ -367,6 +382,13 @@ export default function CalculoIcmsSt() {
       setIvaAjustado(null);
   };
 
+  const handleEdit = (index: number) => {
+    const calculationToEdit = completedCalculations[index];
+    setEditingIndex(index);
+    form.reset(calculationToEdit.formData);
+    setStep('calculating');
+  };
+
   const renderSetup = () => (
     <Card className="w-full max-w-lg mx-auto shadow-lg border">
       <CardHeader>
@@ -395,78 +417,88 @@ export default function CalculoIcmsSt() {
     </Card>
   );
 
-  const renderCalculator = () => (
-    <Card className="w-full max-w-4xl mx-auto shadow-lg border">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-2xl font-headline">
-          <Calculator className="h-6 w-6 text-primary" />
-          Calculadora de ICMS-ST (Cálculo {currentCalculationIndex + 1} de {numberOfCalculations})
-        </CardTitle>
-        <CardDescription>
-          Insira os valores da nota para calcular a Substituição Tributária.
-        </CardDescription>
-      </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-6">
-            <FormField
-              control={form.control}
-              name="items"
-              render={({ field }) => (
-                <FormItem className="pb-4 border-b">
-                  <FormLabel className="font-semibold text-lg flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    Itens da Nota Fiscal *
-                  </FormLabel>
-                   <p className="text-sm text-muted-foreground">Descreva quais itens da nota este cálculo de IVA se aplica. Ex: "Item 1, 2, 5" ou "Parafusos".</p>
-                  <FormControl>
-                    <Textarea placeholder="Ex: Item 1, 2, 5 ou todos os parafusos" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
+  const renderCalculator = () => {
+    const isEditing = editingIndex !== null;
+    return (
+      <Card className="w-full max-w-4xl mx-auto shadow-lg border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-2xl font-headline">
+            <Calculator className="h-6 w-6 text-primary" />
+            {isEditing ? `Editando Cálculo ${editingIndex! + 1}` : `Calculadora de ICMS-ST (Cálculo ${currentCalculationIndex + 1} de ${numberOfCalculations})`}
+          </CardTitle>
+          <CardDescription>
+            Insira os valores da nota para calcular a Substituição Tributária.
+          </CardDescription>
+        </CardHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <CardContent className="space-y-6">
+              <FormField
                 control={form.control}
-                name="operationType"
+                name="items"
                 render={({ field }) => (
-                  <FormItem className="space-y-3 pt-4">
+                  <FormItem className="pb-4 border-b">
                     <FormLabel className="font-semibold text-lg flex items-center gap-2">
-                      <Briefcase className="h-5 w-5 text-primary" />
-                      Tipo de Operação *
+                      <FileText className="h-5 w-5 text-primary" />
+                      Itens da Nota Fiscal
                     </FormLabel>
+                     <p className="text-sm text-muted-foreground">Descreva quais itens da nota este cálculo de IVA se aplica. Ex: "Item 1, 2, 5" ou "Parafusos".</p>
                     <FormControl>
-                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col sm:flex-row gap-4">
-                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="compra" id="op-compra" /></FormControl><FormLabel htmlFor="op-compra" className="font-normal cursor-pointer">Compra</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="pecas" id="op-pecas" /></FormControl><FormLabel htmlFor="op-pecas" className="font-normal cursor-pointer">Peças</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="transferencia" id="op-transfer" /></FormControl><FormLabel htmlFor="op-transfer" className="font-normal cursor-pointer">Transferência</FormLabel></FormItem>
-                      </RadioGroup>
-                    </FormControl><FormMessage />
+                      <Textarea placeholder="Ex: Item 1, 2, 5 ou todos os parafusos" {...field} />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
-               <FormField control={form.control} name="ncm" render={({ field }) => (<FormItem><FormLabel>NCM</FormLabel><FormControl><Input placeholder="84439933" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="fornecedor" render={({ field }) => (<FormItem><FormLabel>Fornecedor</FormLabel><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="Nome do fornecedor" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="valorMercadoria" render={({ field }) => (<FormItem><FormLabel>{operationType === 'pecas' ? 'Valor Total c/ IPI *' : 'Vlr. Mercadoria *'}</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1.000,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-              {operationType === 'compra' ? (<FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />) : operationType === 'pecas' ? (<FormField control={form.control} name="aliqIpi" render={({ field }) => (<FormItem><FormLabel>Alíquota IPI *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />) : <div />}
-              <FormField control={form.control} name="aliqIcms" render={({ field }) => (<FormItem><FormLabel>Alíq. ICMS *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="12,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="mva" render={({ field }) => (<FormItem><FormLabel>IVA/MVA *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="29,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="aliqIcmsSt" render={({ field }) => (<FormItem><FormLabel>Alíq. ICMS ST *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="18,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="redBaseSt" render={({ field }) => (<FormItem><FormLabel className="flex items-center gap-1">Redução Base ST (%)<TooltipProvider><Tooltip><TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent><p>Ex: Alíquota interna de 18% com redução para 12%, a redução é de 33.33%.</p></TooltipContent></Tooltip></TooltipProvider></FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="33,33" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full bg-gradient-to-r from-accent to-primary text-white font-bold">
-              <Calculator className="mr-2 h-4 w-4" />
-              {currentCalculationIndex < numberOfCalculations - 1 ? `Salvar e Próximo (${currentCalculationIndex + 2}/${numberOfCalculations})` : 'Finalizar e Ver Resultados'}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </Card>
-  );
+               <FormField
+                  control={form.control}
+                  name="operationType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3 pt-4">
+                      <FormLabel className="font-semibold text-lg flex items-center gap-2">
+                        <Briefcase className="h-5 w-5 text-primary" />
+                        Tipo de Operação *
+                      </FormLabel>
+                      <FormControl>
+                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col sm:flex-row gap-4">
+                          <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="compra" id="op-compra" /></FormControl><FormLabel htmlFor="op-compra" className="font-normal cursor-pointer">Compra</FormLabel></FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="pecas" id="op-pecas" /></FormControl><FormLabel htmlFor="op-pecas" className="font-normal cursor-pointer">Peças</FormLabel></FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="transferencia" id="op-transfer" /></FormControl><FormLabel htmlFor="op-transfer" className="font-normal cursor-pointer">Transferência</FormLabel></FormItem>
+                        </RadioGroup>
+                      </FormControl><FormMessage />
+                    </FormItem>
+                  )}
+                />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
+                 <FormField control={form.control} name="ncm" render={({ field }) => (<FormItem><FormLabel>NCM</FormLabel><FormControl><Input placeholder="84439933" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="fornecedor" render={({ field }) => (<FormItem><FormLabel>Fornecedor</FormLabel><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="Nome do fornecedor" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="valorMercadoria" render={({ field }) => (<FormItem><FormLabel>{operationType === 'pecas' ? 'Valor Total c/ IPI *' : 'Vlr. Mercadoria *'}</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1.000,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                {operationType === 'compra' ? (<FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />) : operationType === 'pecas' ? (<FormField control={form.control} name="aliqIpi" render={({ field }) => (<FormItem><FormLabel>Alíquota IPI *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />) : <div />}
+                <FormField control={form.control} name="aliqIcms" render={({ field }) => (<FormItem><FormLabel>Alíq. ICMS *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="12,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="mva" render={({ field }) => (<FormItem><FormLabel>IVA/MVA *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="29,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="aliqIcmsSt" render={({ field }) => (<FormItem><FormLabel>Alíq. ICMS ST *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="18,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="redBaseSt" render={({ field }) => (<FormItem><FormLabel className="flex items-center gap-1">Redução Base ST (%)<TooltipProvider><Tooltip><TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent><p>Ex: Alíquota interna de 18% com redução para 12%, a redução é de 33.33%.</p></TooltipContent></Tooltip></TooltipProvider></FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="33,33" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+              </div>
+            </CardContent>
+            <CardFooter className="flex gap-4">
+                {isEditing ? (
+                    <>
+                        <Button type="button" variant="outline" className="w-full" onClick={() => { setEditingIndex(null); setStep('results'); }}>Cancelar</Button>
+                        <Button type="submit" className="w-full bg-gradient-to-r from-accent to-primary text-white font-bold">Salvar Alterações</Button>
+                    </>
+                ) : (
+                    <Button type="submit" className="w-full bg-gradient-to-r from-accent to-primary text-white font-bold">
+                      <Calculator className="mr-2 h-4 w-4" />
+                      {currentCalculationIndex < numberOfCalculations - 1 ? `Salvar e Próximo (${currentCalculationIndex + 2}/${numberOfCalculations})` : 'Finalizar e Ver Resultados'}
+                    </Button>
+                )}
+            </CardFooter>
+          </form>
+        </Form>
+      </Card>
+    );
+  }
 
   const renderResults = () => {
     const totalSt = completedCalculations.reduce((acc, calc) => acc + calc.result.valorSt, 0);
@@ -489,9 +521,12 @@ export default function CalculoIcmsSt() {
         <div className="space-y-4">
           {completedCalculations.map((calc, index) => (
              <Card key={index} className="border-border/50">
-                <CardHeader>
-                    <CardTitle>Cálculo {index + 1}</CardTitle>
-                    <CardDescription>Para os itens: <span className="font-semibold text-foreground">{calc.formData.items}</span></CardDescription>
+                <CardHeader className="flex flex-row justify-between items-start">
+                    <div>
+                        <CardTitle>Cálculo {index + 1}</CardTitle>
+                        <CardDescription>Para os itens: <span className="font-semibold text-foreground">{calc.formData.items || 'Não especificado'}</span></CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(index)}><Pencil className="mr-2 h-4 w-4" /> Editar</Button>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <ResultCard title="Base de Cálculo ST" value={calc.result.baseSt} />
@@ -545,5 +580,3 @@ export default function CalculoIcmsSt() {
     </div>
   );
 }
-
-    

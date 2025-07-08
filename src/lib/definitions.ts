@@ -201,7 +201,7 @@ const numericString = (errorMessage: string) =>
   }, { message: "Valor inválido." });
 
 export const icmsStSchema = z.object({
-  items: z.string().min(1, "Especifique os itens para este cálculo."),
+  items: z.string().optional(),
   operationType: z.enum(['compra', 'transferencia', 'pecas'], { required_error: "Selecione o tipo de operação." }),
   ncm: z.string().optional(),
   fornecedor: z.string().optional(),
