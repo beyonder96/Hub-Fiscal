@@ -1,9 +1,8 @@
-
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookMarked, Calculator, FileCode, FileSpreadsheet, Search, Shield, Users, Undo2 } from "lucide-react";
+import { BookMarked, Calculator, FileCode, FileSpreadsheet, Search, Shield, Users } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
@@ -13,7 +12,6 @@ const toolLinks = [
   { href: "/calculo-icms-st", label: "Cálculo ICMS-ST", icon: FileSpreadsheet },
   { href: "/pesquisa-tes", label: "Pesquisa de TES", icon: Search },
   { href: "/chamados", label: "Consulta Prestador", icon: Users },
-  { href: "/devolucao", label: "Manual Devolução", icon: Undo2 },
 ];
 
 export function Header() {
