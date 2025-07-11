@@ -301,7 +301,7 @@ export default function CalculoIcmsSt() {
 
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(46, 139, 192); // #2E8BC0
+        doc.setTextColor("#2E8BC0");
         doc.text(title, leftMargin + cellPadding, currentY + 2);
         currentY += titleHeight;
         
@@ -370,7 +370,7 @@ export default function CalculoIcmsSt() {
             checkNewPage(12);
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor(46, 139, 192);
+            doc.setTextColor("#2E8BC0");
             doc.text(`Itens Aplicados:`, leftMargin, y);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(85, 85, 85);
@@ -409,12 +409,12 @@ export default function CalculoIcmsSt() {
     
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(46, 139, 192); // #2E8BC0
+    doc.setTextColor("#2E8BC0"); 
     doc.text("📌 Total do ICMS-ST:", leftMargin + 8, y + 10);
 
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(76, 175, 80); // #4CAF50
+    doc.setTextColor("#4CAF50");
     doc.text(formatCurrency(totalSt), leftMargin + 8, y + 18);
     
     doc.save("relatorio_consolidado_icms_st.pdf");
