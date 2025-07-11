@@ -261,13 +261,16 @@ export type Prestador = PrestadorFormData & {
 // --- Admin Tasks Definitions ---
 export const taskSchema = z.object({
   title: z.string().min(3, { message: "A tarefa deve ter pelo menos 3 caracteres." }),
+  description: z.string().optional(),
 });
 
 export type TaskFormData = z.infer<typeof taskSchema>;
+export type TaskStatus = 'A Fazer' | 'Em Progresso' | 'Concluído';
 
 export interface Task {
   id: string;
   title: string;
-  status: 'Pendente' | 'Concluída';
+  description?: string;
+  status: TaskStatus;
   createdAt: string; // ISO string
 }
