@@ -263,109 +263,159 @@ export default function CalculoIcmsSt() {
     const doc = new jsPDF();
     let y = 15;
     const pageHeight = doc.internal.pageSize.height;
+    const leftMargin = 14;
+    const rightMargin = 14;
+    const pageContentWidth = doc.internal.pageSize.width - leftMargin - rightMargin;
     const bottomMargin = 20;
 
     const checkNewPage = (heightNeeded: number) => {
-      if (y + heightNeeded > pageHeight - bottomMargin) {
-        doc.addPage();
-        y = 15;
-      }
+        if (y + heightNeeded > pageHeight - bottomMargin) {
+            doc.addPage();
+            y = 15;
+        }
+    };
+
+    const drawCard = (cardX: number, cardY: number, cardW: number, cardH: number) => {
+        const cornerRadius = 3;
+        // Shadow
+        doc.setFillColor(200, 200, 200);
+        doc.roundedRect(cardX + 0.5, cardY + 0.5, cardW, cardH, cornerRadius, cornerRadius, 'F');
+        // Card itself
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(cardX, cardY, cardW, cardH, cornerRadius, cornerRadius, 'F');
     };
     
-    const printSectionHeader = (title: string) => {
-      checkNewPage(12);
-      y += 5;
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(title, 14, y);
-      y += 8;
-    }
-    
-    const drawTable = (headers: string[], rows: (string | number)[][], colWidths: number[]) => {
-      checkNewPage(15);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
+    const drawTable = (startY: number, title: string, data: string[][]): number => {
+        const cardPadding = 8;
+        const cellPadding = 3;
+        const rowHeight = 8;
+        const headerHeight = 10;
+        const titleHeight = 10;
+        const cardWidth = pageContentWidth;
+        const cardHeight = titleHeight + headerHeight + (data.length * rowHeight) + cardPadding;
+        
+        checkNewPage(cardHeight);
+        drawCard(leftMargin, startY, cardWidth, cardHeight);
+        
+        let currentY = startY + cardPadding;
 
-      let x = 15;
-      headers.forEach((header, i) => {
-        doc.text(header, x, y);
-        x += colWidths[i];
-      });
-
-      y += 2;
-      doc.line(14, y, 196, y); // Horizontal line
-      y += 5;
-      doc.setFont('helvetica', 'normal');
-
-      rows.forEach(row => {
-        checkNewPage(8);
-        x = 15;
-        row.forEach((cell, i) => {
-          doc.text(String(cell), x, y);
-          x += colWidths[i];
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(46, 139, 192); // #2E8BC0
+        doc.text(title, leftMargin + cellPadding, currentY + 2);
+        currentY += titleHeight;
+        
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(220, 220, 220); // Light gray for lines
+        doc.line(leftMargin + cellPadding, currentY, leftMargin + cardWidth - cellPadding, currentY);
+        currentY += 2;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(85, 85, 85); // #555
+        
+        const colWidths = [cardWidth / 2 - cellPadding, cardWidth / 2 - cellPadding];
+        let currentX = leftMargin + cellPadding;
+        
+        doc.text("Campo", currentX, currentY + 5);
+        doc.text("Valor", currentX + colWidths[0] + cellPadding, currentY + 5);
+        currentY += headerHeight;
+        
+        doc.setFont('helvetica', 'normal');
+        data.forEach(row => {
+            currentX = leftMargin + cellPadding;
+            doc.text(row[0], currentX, currentY + 5);
+            doc.text(row[1], currentX + colWidths[0] + cellPadding, currentY + 5);
+            currentY += rowHeight;
         });
-        y += 7;
-      });
-      y += 3;
-    }
+
+        return startY + cardHeight + 5;
+    };
     
+    // Main Title
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text("Relatório Consolidado de Cálculo ICMS-ST", 105, y, { align: 'center' });
+    doc.setTextColor(50, 50, 50);
+    doc.text("Relatório ICMS-ST - Consolidado", doc.internal.pageSize.width / 2, y, { align: 'center' });
     y += 10;
     
     completedCalculations.forEach((calc, index) => {
-      printSectionHeader(`Cálculo ${index + 1} de ${completedCalculations.length}`);
-      
-      if (calc.formData.items) {
-          doc.setFontSize(10);
-          checkNewPage(12);
-          doc.setFont('helvetica', 'bold');
-          doc.text(`Itens Aplicados:`, 15, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(calc.formData.items, 45, y);
-          y += 10;
-      }
+        // Calculation Sub-header
+        checkNewPage(20);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(85, 85, 85);
+        const calcHeader = `Cálculo ${index + 1} de ${completedCalculations.length} · Tipo: `;
+        doc.text(calcHeader, leftMargin, y);
+        
+        doc.setFont('helvetica', 'bold');
+        const typeText = `${calc.formData.operationType}`;
+        doc.text(typeText, leftMargin + doc.getTextWidth(calcHeader), y);
+        
+        let offsetX = doc.getTextWidth(calcHeader + typeText);
 
-      const inputData = [
-          ["Tipo Operação", calc.formData.operationType],
-          ["Fornecedor", calc.formData.fornecedor || "N/A"],
-          ["NCM", calc.formData.ncm || "N/A"],
-          ...(calc.formData.operationType === 'pecas' ? [
-            ["Valor Total c/ IPI", formatCurrency(parseLocaleString(calc.formData.valorMercadoria))]
-          ] : [
-            ["Valor Mercadoria", formatCurrency(parseLocaleString(calc.formData.valorMercadoria))]
-          ]),
-          ["Valor Frete", formatCurrency(parseLocaleString(calc.formData.valorFrete || "0"))],
-          ...(calc.formData.operationType === 'compra' ? [["Valor IPI", formatCurrency(parseLocaleString(calc.formData.valorIpi || '0'))]] : []),
-          ...(calc.formData.operationType === 'pecas' ? [["Alíquota IPI", formatPercent(calc.formData.aliqIpi)]] : []),
-          ["Alíquota ICMS", formatPercent(calc.formData.aliqIcms)],
-          ["IVA/MVA", formatPercent(calc.formData.mva)],
-          ["Alíquota ICMS-ST", formatPercent(calc.formData.aliqIcmsSt)],
-      ];
-      drawTable(['Parâmetro', 'Valor'], inputData.map(row => [row[0], row[1].toString()]), [80, 80]);
+        if (calc.formData.fornecedor) {
+            doc.setFont('helvetica', 'normal');
+            const fornecedorHeader = ` · Fornecedor: `;
+            doc.text(fornecedorHeader, leftMargin + offsetX, y);
+            offsetX += doc.getTextWidth(fornecedorHeader);
 
-      const resultData = [
-          ["Base PIS/COFINS", formatCurrency(calc.result.basePisCofins)],
-          ["Valor ICMS Próprio", formatCurrency(calc.result.valorIcmsProprio)],
-          ["Valor IPI", formatCurrency(calc.result.valorIpi)],
-          ["Base de Cálculo ST", formatCurrency(calc.result.baseSt)],
-          ["Valor do ICMS-ST", formatCurrency(calc.result.valorSt)],
-          ["Valor Total da Nota", formatCurrency(calc.result.valorTotalNota)],
-      ];
-      drawTable(['Resultado', 'Valor'], resultData.map(row => [row[0], row[1].toString()]), [80, 80]);
+            doc.setFont('helvetica', 'bold');
+            doc.text(calc.formData.fornecedor, leftMargin + offsetX, y);
+        }
+        y += 5;
 
+        // Items Applied
+        if (calc.formData.items) {
+            checkNewPage(12);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(46, 139, 192);
+            doc.text(`Itens Aplicados:`, leftMargin, y);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(85, 85, 85);
+            doc.text(calc.formData.items, leftMargin + doc.getTextWidth('Itens Aplicados: ') + 2, y);
+            y += 8;
+        }
+
+        // Tables
+        const opData = [
+            ["NCM", calc.formData.ncm || 'N/A'],
+            [calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria", formatCurrency(parseLocaleString(calc.formData.valorMercadoria))],
+            ["Valor do Frete", formatCurrency(parseLocaleString(calc.formData.valorFrete || "0"))],
+            ...(calc.formData.operationType !== 'transferencia' ? [["Valor do IPI", formatCurrency(calc.result.valorIpi)]] : []),
+            ["Alíquota ICMS", formatPercent(calc.formData.aliqIcms)],
+            ["IVA/MVA", formatPercent(calc.formData.mva)],
+            ["Alíquota ICMS-ST", formatPercent(calc.formData.aliqIcmsSt)],
+        ];
+        y = drawTable(y, "🧾 Detalhes da Operação", opData);
+
+        const resultData = [
+            ["Base PIS/COFINS", formatCurrency(calc.result.basePisCofins)],
+            ["ICMS Próprio", formatCurrency(calc.result.valorIcmsProprio)],
+            ["Base de Cálculo ST", formatCurrency(calc.result.baseSt)],
+            ["ICMS-ST", formatCurrency(calc.result.valorSt)],
+            ["Total da Nota", formatCurrency(calc.result.valorTotalNota)],
+        ];
+        y = drawTable(y, "📊 Resultados do Cálculo", resultData);
+        y+=5;
     });
 
-    printSectionHeader("Resumo Geral");
-    
+    // Final Summary
     const totalSt = completedCalculations.reduce((acc, calc) => acc + calc.result.valorSt, 0);
-    const totalPisCofins = completedCalculations.reduce((acc, calc) => acc + calc.result.basePisCofins, 0);
+    const cardHeight = 25;
+    checkNewPage(cardHeight + 10);
+    drawCard(leftMargin, y, pageContentWidth, cardHeight);
     
-    drawTable(['Total', 'Valor'], [
-        ['Base PIS/COFINS (Soma)', formatCurrency(totalPisCofins)],
-        ['ICMS-ST a Recolher (Soma)', formatCurrency(totalSt)]
-    ], [80, 80]);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(46, 139, 192); // #2E8BC0
+    doc.text("📌 Total do ICMS-ST:", leftMargin + 8, y + 10);
+
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(76, 175, 80); // #4CAF50
+    doc.text(formatCurrency(totalSt), leftMargin + 8, y + 18);
     
     doc.save("relatorio_consolidado_icms_st.pdf");
   };
@@ -449,7 +499,7 @@ export default function CalculoIcmsSt() {
                   <FormItem className="pb-4 border-b">
                     <FormLabel className="font-semibold text-lg flex items-center gap-2">
                       <FileText className="h-5 w-5 text-primary" />
-                      Itens da Nota Fiscal
+                      Itens da Nota Fiscal (Opcional)
                     </FormLabel>
                      <p className="text-sm text-muted-foreground">Descreva quais itens da nota este cálculo de IVA se aplica. Ex: "Item 1, 2, 5" ou "Parafusos".</p>
                     <FormControl>
