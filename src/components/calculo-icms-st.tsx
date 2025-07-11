@@ -272,91 +272,100 @@ export default function CalculoIcmsSt() {
       }
     };
     
-    const printRow = (label: string, value: string) => {
-        checkNewPage(7);
-        doc.setFont("helvetica", "normal");
-        doc.text(label, 15, y);
-        doc.text(value, 195, y, { align: 'right' });
-        y += 7;
-    };
-
-    doc.setFontSize(18);
-    doc.text("Relatório Consolidado de Cálculo ICMS-ST", 105, y, { align: 'center' });
-    y += 15;
-
-    completedCalculations.forEach((calc, index) => {
-      checkNewPage(60); // Check space for section header
-      if (index > 0) {
-        y += 5;
-        doc.setLineDashPattern([2, 2], 0);
-        doc.line(15, y, 195, y);
-        doc.setLineDashPattern([], 0);
-        y += 10;
-      }
+    const printSectionHeader = (title: string) => {
+      checkNewPage(12);
+      y += 5;
       doc.setFontSize(14);
-      doc.text(`Cálculo ${index + 1} de ${completedCalculations.length}`, 14, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title, 14, y);
       y += 8;
+    }
+    
+    const drawTable = (headers: string[], rows: (string | number)[][], colWidths: number[]) => {
+      checkNewPage(15);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+
+      let x = 15;
+      headers.forEach((header, i) => {
+        doc.text(header, x, y);
+        x += colWidths[i];
+      });
+
+      y += 2;
+      doc.line(14, y, 196, y); // Horizontal line
+      y += 5;
+      doc.setFont('helvetica', 'normal');
+
+      rows.forEach(row => {
+        checkNewPage(8);
+        x = 15;
+        row.forEach((cell, i) => {
+          doc.text(String(cell), x, y);
+          x += colWidths[i];
+        });
+        y += 7;
+      });
+      y += 3;
+    }
+    
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text("Relatório Consolidado de Cálculo ICMS-ST", 105, y, { align: 'center' });
+    y += 10;
+    
+    completedCalculations.forEach((calc, index) => {
+      printSectionHeader(`Cálculo ${index + 1} de ${completedCalculations.length}`);
       
       if (calc.formData.items) {
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        checkNewPage(12);
-        doc.text(`Itens Aplicados:`, 15, y);
-        y += 6;
-        doc.setFont("helvetica", "normal");
-        const itemLines = doc.splitTextToSize(calc.formData.items, 180);
-        checkNewPage(itemLines.length * 5 + 5);
-        doc.text(itemLines, 15, y);
-        y += itemLines.length * 5 + 5;
+          doc.setFontSize(10);
+          checkNewPage(12);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`Itens Aplicados:`, 15, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(calc.formData.items, 45, y);
+          y += 10;
       }
 
-      printRow("Tipo de Operação:", calc.formData.operationType);
-      printRow("Fornecedor:", calc.formData.fornecedor || "N/A");
-      printRow("NCM:", calc.formData.ncm || "N/A");
+      const inputData = [
+          ["Tipo Operação", calc.formData.operationType],
+          ["Fornecedor", calc.formData.fornecedor || "N/A"],
+          ["NCM", calc.formData.ncm || "N/A"],
+          ...(calc.formData.operationType === 'pecas' ? [
+            ["Valor Total c/ IPI", formatCurrency(parseLocaleString(calc.formData.valorMercadoria))]
+          ] : [
+            ["Valor Mercadoria", formatCurrency(parseLocaleString(calc.formData.valorMercadoria))]
+          ]),
+          ["Valor Frete", formatCurrency(parseLocaleString(calc.formData.valorFrete || "0"))],
+          ...(calc.formData.operationType === 'compra' ? [["Valor IPI", formatCurrency(parseLocaleString(calc.formData.valorIpi || '0'))]] : []),
+          ...(calc.formData.operationType === 'pecas' ? [["Alíquota IPI", formatPercent(calc.formData.aliqIpi)]] : []),
+          ["Alíquota ICMS", formatPercent(calc.formData.aliqIcms)],
+          ["IVA/MVA", formatPercent(calc.formData.mva)],
+          ["Alíquota ICMS-ST", formatPercent(calc.formData.aliqIcmsSt)],
+      ];
+      drawTable(['Parâmetro', 'Valor'], inputData.map(row => [row[0], row[1].toString()]), [80, 80]);
 
-      if (calc.formData.operationType === 'pecas') {
-        const valorTotalComIpi = parseLocaleString(calc.formData.valorMercadoria);
-        const aliqIpi = parseLocaleString(calc.formData.aliqIpi || "0");
-        const valorMercadoriaSemIpi = parseFloat((valorTotalComIpi / (1 + aliqIpi / 100)).toFixed(2));
-        printRow("Valor Total c/ IPI:", formatCurrency(valorTotalComIpi));
-        printRow("Valor Mercadoria (s/ IPI):", formatCurrency(valorMercadoriaSemIpi));
-      } else {
-        printRow("Valor da Mercadoria:", formatCurrency(parseLocaleString(calc.formData.valorMercadoria)));
-      }
-      printRow("Valor do Frete:", formatCurrency(parseLocaleString(calc.formData.valorFrete || "0")));
-      if (calc.formData.operationType === 'compra') printRow("Valor IPI:", formatCurrency(parseLocaleString(calc.formData.valorIpi || '0')));
-      if (calc.formData.operationType === 'pecas') printRow("Alíquota IPI:", formatPercent(calc.formData.aliqIpi));
-      printRow("Alíquota ICMS:", formatPercent(calc.formData.aliqIcms));
-      printRow("IVA/MVA:", formatPercent(calc.formData.mva));
-      printRow("Alíquota ICMS-ST:", formatPercent(calc.formData.aliqIcmsSt));
-      y += 5;
-      
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      checkNewPage(10);
-      doc.text("Resultados do Cálculo Específico", 14, y);
-      y+= 7;
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      printRow("Valor ICMS Próprio:", formatCurrency(calc.result.valorIcmsProprio));
-      printRow("Valor IPI:", formatCurrency(calc.result.valorIpi));
-      printRow("Base de Cálculo ST:", formatCurrency(calc.result.baseSt));
-      printRow("Valor do ICMS-ST:", formatCurrency(calc.result.valorSt));
-      printRow("Valor Total da Nota:", formatCurrency(calc.result.valorTotalNota));
+      const resultData = [
+          ["Base PIS/COFINS", formatCurrency(calc.result.basePisCofins)],
+          ["Valor ICMS Próprio", formatCurrency(calc.result.valorIcmsProprio)],
+          ["Valor IPI", formatCurrency(calc.result.valorIpi)],
+          ["Base de Cálculo ST", formatCurrency(calc.result.baseSt)],
+          ["Valor do ICMS-ST", formatCurrency(calc.result.valorSt)],
+          ["Valor Total da Nota", formatCurrency(calc.result.valorTotalNota)],
+      ];
+      drawTable(['Resultado', 'Valor'], resultData.map(row => [row[0], row[1].toString()]), [80, 80]);
+
     });
 
-    checkNewPage(40);
-    y += 10;
-    doc.setFontSize(14);
-    doc.text("Resumo Geral", 14, y);
-    doc.line(14, y + 2, 195, y + 2); 
-    y += 10;
+    printSectionHeader("Resumo Geral");
     
-    let totalSt = completedCalculations.reduce((acc, calc) => acc + calc.result.valorSt, 0);
+    const totalSt = completedCalculations.reduce((acc, calc) => acc + calc.result.valorSt, 0);
+    const totalPisCofins = completedCalculations.reduce((acc, calc) => acc + calc.result.basePisCofins, 0);
     
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    printRow("Valor Total do ICMS-ST (Soma de todos os cálculos):", formatCurrency(totalSt));
+    drawTable(['Total', 'Valor'], [
+        ['Base PIS/COFINS (Soma)', formatCurrency(totalPisCofins)],
+        ['ICMS-ST a Recolher (Soma)', formatCurrency(totalSt)]
+    ], [80, 80]);
     
     doc.save("relatorio_consolidado_icms_st.pdf");
   };
@@ -531,6 +540,7 @@ export default function CalculoIcmsSt() {
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <ResultCard title="Base de Cálculo ST" value={calc.result.baseSt} />
                     <ResultCard title="Valor do ICMS-ST" value={calc.result.valorSt} isPrimary />
+                    <ResultCard title="Base PIS/COFINS" value={calc.result.basePisCofins} />
                     <ResultCard title="Valor Total da Nota" value={calc.result.valorTotalNota} isPrimary />
                 </CardContent>
              </Card>
