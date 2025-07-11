@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { IcmsStFormData } from "@/lib/definitions";
 import { icmsStSchema } from "@/lib/definitions";
-import jsPDF from "jspdf";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -260,165 +259,97 @@ export default function CalculoIcmsSt() {
   const handleExportToPdf = () => {
     if (completedCalculations.length === 0) return;
 
-    const doc = new jsPDF();
-    let y = 15;
-    const pageHeight = doc.internal.pageSize.height;
-    const leftMargin = 14;
-    const rightMargin = 14;
-    const pageContentWidth = doc.internal.pageSize.width - leftMargin - rightMargin;
-    const bottomMargin = 20;
+    const calculationsHtml = completedCalculations.map((calc, index) => `
+      <div class="subtitle">
+        Cálculo ${index + 1} de ${completedCalculations.length} · Tipo: <strong>${calc.formData.operationType}</strong> · Fornecedor: <strong>${calc.formData.fornecedor || 'N/A'}</strong>
+      </div>
+      ${calc.formData.items ? `<div class="items-applied">Aplicado aos itens: <strong>${calc.formData.items}</strong></div>` : ''}
 
-    const checkNewPage = (heightNeeded: number) => {
-        if (y + heightNeeded > pageHeight - bottomMargin) {
-            doc.addPage();
-            y = 15;
-        }
-    };
+      <div class="section-title">📍 Detalhes da Operação</div>
+      <table>
+        <tr><th>Campo</th><th>Valor</th></tr>
+        <tr><td>NCM</td><td>${calc.formData.ncm || 'N/A'}</td></tr>
+        <tr><td>${calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria"}</td><td>${formatCurrency(parseLocaleString(calc.formData.valorMercadoria))}</td></tr>
+        <tr><td>Valor do Frete</td><td>${formatCurrency(parseLocaleString(calc.formData.valorFrete || "0"))}</td></tr>
+        <tr><td>Valor do IPI</td><td>${formatCurrency(calc.result.valorIpi)}</td></tr>
+        <tr><td>Alíquota ICMS</td><td>${formatPercent(calc.formData.aliqIcms)}</td></tr>
+        <tr><td>IVA/MVA</td><td>${formatPercent(calc.formData.mva)}</td></tr>
+        <tr><td>Alíquota ICMS-ST</td><td>${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
+      </table>
 
-    const drawCard = (cardX: number, cardY: number, cardW: number, cardH: number) => {
-        const cornerRadius = 3;
-        // Shadow
-        doc.setFillColor(200, 200, 200);
-        doc.roundedRect(cardX + 0.5, cardY + 0.5, cardW, cardH, cornerRadius, cornerRadius, 'F');
-        // Card itself
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(cardX, cardY, cardW, cardH, cornerRadius, cornerRadius, 'F');
-    };
-    
-    const drawTable = (startY: number, title: string, data: string[][]): number => {
-        const cardPadding = 8;
-        const cellPadding = 3;
-        const rowHeight = 8;
-        const headerHeight = 10;
-        const titleHeight = 10;
-        const cardWidth = pageContentWidth;
-        const cardHeight = titleHeight + headerHeight + (data.length * rowHeight) + cardPadding;
-        
-        checkNewPage(cardHeight);
-        drawCard(leftMargin, startY, cardWidth, cardHeight);
-        
-        let currentY = startY + cardPadding;
+      <div class="section-title">📊 Resultados do Cálculo</div>
+      <table>
+        <tr><th>Campo</th><th>Valor</th></tr>
+        <tr><td>ICMS Próprio</td><td>${formatCurrency(calc.result.valorIcmsProprio)}</td></tr>
+        <tr><td>Base de Cálculo ST</td><td>${formatCurrency(calc.result.baseSt)}</td></tr>
+        <tr><td>ICMS-ST</td><td><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
+        <tr><td>Base PIS/COFINS</td><td>${formatCurrency(calc.result.basePisCofins)}</td></tr>
+        <tr><td>Total da Nota</td><td>${formatCurrency(calc.result.valorTotalNota)}</td></tr>
+      </table>
+    `).join('<hr class="section-divider">');
 
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor("#2E8BC0");
-        doc.text(title, leftMargin + cellPadding, currentY + 2);
-        currentY += titleHeight;
-        
-        doc.setLineWidth(0.2);
-        doc.setDrawColor(220, 220, 220); // Light gray for lines
-        doc.line(leftMargin + cellPadding, currentY, leftMargin + cardWidth - cellPadding, currentY);
-        currentY += 2;
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(85, 85, 85); // #555
-        
-        const colWidths = [cardWidth / 2 - cellPadding, cardWidth / 2 - cellPadding];
-        let currentX = leftMargin + cellPadding;
-        
-        doc.text("Campo", currentX, currentY + 5);
-        doc.text("Valor", currentX + colWidths[0] + cellPadding, currentY + 5);
-        currentY += headerHeight;
-        
-        doc.setFont('helvetica', 'normal');
-        data.forEach(row => {
-            currentX = leftMargin + cellPadding;
-            doc.text(row[0], currentX, currentY + 5);
-            doc.text(row[1], currentX + colWidths[0] + cellPadding, currentY + 5);
-            currentY += rowHeight;
-        });
-
-        return startY + cardHeight + 5;
-    };
-    
-    // Main Title
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(50, 50, 50);
-    doc.text("Relatório ICMS-ST - Consolidado", doc.internal.pageSize.width / 2, y, { align: 'center' });
-    y += 10;
-    
-    completedCalculations.forEach((calc, index) => {
-        // Calculation Sub-header
-        checkNewPage(20);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(85, 85, 85);
-        const calcHeader = `Cálculo ${index + 1} de ${completedCalculations.length} · Tipo: `;
-        doc.text(calcHeader, leftMargin, y);
-        
-        doc.setFont('helvetica', 'bold');
-        const typeText = `${calc.formData.operationType}`;
-        doc.text(typeText, leftMargin + doc.getTextWidth(calcHeader), y);
-        
-        let offsetX = doc.getTextWidth(calcHeader + typeText);
-
-        if (calc.formData.fornecedor) {
-            doc.setFont('helvetica', 'normal');
-            const fornecedorHeader = ` · Fornecedor: `;
-            doc.text(fornecedorHeader, leftMargin + offsetX, y);
-            offsetX += doc.getTextWidth(fornecedorHeader);
-
-            doc.setFont('helvetica', 'bold');
-            doc.text(calc.formData.fornecedor, leftMargin + offsetX, y);
-        }
-        y += 5;
-
-        // Items Applied
-        if (calc.formData.items) {
-            checkNewPage(12);
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor("#2E8BC0");
-            doc.text(`Itens Aplicados:`, leftMargin, y);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(85, 85, 85);
-            doc.text(calc.formData.items, leftMargin + doc.getTextWidth('Itens Aplicados: ') + 2, y);
-            y += 8;
-        }
-
-        // Tables
-        const opData = [
-            ["NCM", calc.formData.ncm || 'N/A'],
-            [calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria", formatCurrency(parseLocaleString(calc.formData.valorMercadoria))],
-            ["Valor do Frete", formatCurrency(parseLocaleString(calc.formData.valorFrete || "0"))],
-            ...(calc.formData.operationType !== 'transferencia' ? [["Valor do IPI", formatCurrency(calc.result.valorIpi)]] : []),
-            ["Alíquota ICMS", formatPercent(calc.formData.aliqIcms)],
-            ["IVA/MVA", formatPercent(calc.formData.mva)],
-            ["Alíquota ICMS-ST", formatPercent(calc.formData.aliqIcmsSt)],
-        ];
-        y = drawTable(y, "🧾 Detalhes da Operação", opData);
-
-        const resultData = [
-            ["Base PIS/COFINS", formatCurrency(calc.result.basePisCofins)],
-            ["ICMS Próprio", formatCurrency(calc.result.valorIcmsProprio)],
-            ["Base de Cálculo ST", formatCurrency(calc.result.baseSt)],
-            ["ICMS-ST", formatCurrency(calc.result.valorSt)],
-            ["Total da Nota", formatCurrency(calc.result.valorTotalNota)],
-        ];
-        y = drawTable(y, "📊 Resultados do Cálculo", resultData);
-        y+=5;
-    });
-
-    // Final Summary
     const totalSt = completedCalculations.reduce((acc, calc) => acc + calc.result.valorSt, 0);
-    const cardHeight = 25;
-    checkNewPage(cardHeight + 10);
-    drawCard(leftMargin, y, pageContentWidth, cardHeight);
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor("#2E8BC0"); 
-    doc.text("📌 Total do ICMS-ST:", leftMargin + 8, y + 10);
 
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor("#4CAF50");
-    doc.text(formatCurrency(totalSt), leftMargin + 8, y + 18);
-    
-    doc.save("relatorio_consolidado_icms_st.pdf");
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Relatório ICMS-ST</title>
+        <style>
+          body { font-family: "Segoe UI", sans-serif; background-color: #f9fafb; margin: 0; padding: 20px; color: #333; }
+          .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+          h1 { font-size: 22px; color: #111827; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-top: 0; }
+          .subtitle { margin-top: 4px; font-size: 14px; color: #6b7280; }
+          .items-applied { font-size: 13px; color: #4b5563; background-color: #f3f4f6; padding: 8px; border-radius: 6px; margin-top: 10px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+          th { text-align: left; color: #3b82f6; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding: 8px 0; }
+          td { padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+          .section-title { margin-top: 30px; font-size: 16px; font-weight: bold; color: #3b82f6; }
+          .section-divider { border: 0; height: 1px; background: #e5e7eb; margin: 40px 0; }
+          .total-box { margin-top: 30px; background-color: #ecfdf5; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; }
+          .total-label { font-size: 14px; color: #065f46; }
+          .total-value { font-size: 22px; font-weight: bold; color: #047857; }
+          .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+          .btn-print { display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: background 0.3s; }
+          .btn-print:hover { background-color: #2563eb; }
+          @media print {
+            body { padding: 0; background-color: #fff; }
+            .container { box-shadow: none; border-radius: 0; padding: 10px; }
+            .print-header { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="print-header">
+            <h1>Relatório ICMS-ST - Consolidado</h1>
+            <button class="btn-print" onclick="window.print()">📄 Exportar para PDF</button>
+          </div>
+          ${calculationsHtml}
+          <div class="total-box">
+            <div class="total-label">✅ Total do ICMS-ST:</div>
+            <div class="total-value">${formatCurrency(totalSt)}</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const reportWindow = window.open("", "_blank");
+    if (reportWindow) {
+      reportWindow.document.write(htmlContent);
+      reportWindow.document.close();
+      reportWindow.focus();
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao abrir relatório',
+        description: 'Por favor, habilite pop-ups para este site.'
+      });
+    }
   };
+
 
   const handleIvaCalculation = () => {
     const original = parseLocaleString(ivaOriginal) / 100;
