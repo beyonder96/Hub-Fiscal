@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase, Building, FileText, Search, Clipboard, ArrowRight, PlusCircle, Pencil } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase, Building, FileText, Search, Clipboard, ArrowRight, PlusCircle, Pencil, Printer } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
@@ -256,7 +256,7 @@ export default function CalculoIcmsSt() {
     }
   };
   
-  const handleExportToPdf = () => {
+  const handlePrint = () => {
     if (completedCalculations.length === 0) return;
 
     const calculationsHtml = completedCalculations.map((calc, index) => `
@@ -267,24 +267,28 @@ export default function CalculoIcmsSt() {
 
       <div class="section-title">📍 Detalhes da Operação</div>
       <table>
-        <tr><th>Campo</th><th>Valor</th></tr>
-        <tr><td>NCM</td><td>${calc.formData.ncm || 'N/A'}</td></tr>
-        <tr><td>${calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria"}</td><td>${formatCurrency(parseLocaleString(calc.formData.valorMercadoria))}</td></tr>
-        <tr><td>Valor do Frete</td><td>${formatCurrency(parseLocaleString(calc.formData.valorFrete || "0"))}</td></tr>
-        <tr><td>Valor do IPI</td><td>${formatCurrency(calc.result.valorIpi)}</td></tr>
-        <tr><td>Alíquota ICMS</td><td>${formatPercent(calc.formData.aliqIcms)}</td></tr>
-        <tr><td>IVA/MVA</td><td>${formatPercent(calc.formData.mva)}</td></tr>
-        <tr><td>Alíquota ICMS-ST</td><td>${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
+        <thead><tr><th>Campo</th><th>Valor</th></tr></thead>
+        <tbody>
+          <tr><td>NCM</td><td>${calc.formData.ncm || 'N/A'}</td></tr>
+          <tr><td>${calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria"}</td><td>${formatCurrency(parseLocaleString(calc.formData.valorMercadoria))}</td></tr>
+          <tr><td>Valor do Frete</td><td>${formatCurrency(parseLocaleString(calc.formData.valorFrete || "0"))}</td></tr>
+          <tr><td>Valor do IPI</td><td>${formatCurrency(calc.result.valorIpi)}</td></tr>
+          <tr><td>Alíquota ICMS</td><td>${formatPercent(calc.formData.aliqIcms)}</td></tr>
+          <tr><td>IVA/MVA</td><td>${formatPercent(calc.formData.mva)}</td></tr>
+          <tr><td>Alíquota ICMS-ST</td><td>${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
+        </tbody>
       </table>
 
       <div class="section-title">📊 Resultados do Cálculo</div>
       <table>
-        <tr><th>Campo</th><th>Valor</th></tr>
-        <tr><td>ICMS Próprio</td><td>${formatCurrency(calc.result.valorIcmsProprio)}</td></tr>
-        <tr><td>Base de Cálculo ST</td><td>${formatCurrency(calc.result.baseSt)}</td></tr>
-        <tr><td>ICMS-ST</td><td><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
-        <tr><td>Base PIS/COFINS</td><td>${formatCurrency(calc.result.basePisCofins)}</td></tr>
-        <tr><td>Total da Nota</td><td>${formatCurrency(calc.result.valorTotalNota)}</td></tr>
+        <thead><tr><th>Campo</th><th>Valor</th></tr></thead>
+        <tbody>
+          <tr><td>ICMS Próprio</td><td>${formatCurrency(calc.result.valorIcmsProprio)}</td></tr>
+          <tr><td>Base de Cálculo ST</td><td>${formatCurrency(calc.result.baseSt)}</td></tr>
+          <tr><td>ICMS-ST</td><td><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
+          <tr><td>Base PIS/COFINS</td><td>${formatCurrency(calc.result.basePisCofins)}</td></tr>
+          <tr><td>Total da Nota</td><td>${formatCurrency(calc.result.valorTotalNota)}</td></tr>
+        </tbody>
       </table>
     `).join('<hr class="section-divider">');
 
@@ -297,34 +301,37 @@ export default function CalculoIcmsSt() {
         <meta charset="UTF-8" />
         <title>Relatório ICMS-ST</title>
         <style>
-          body { font-family: "Segoe UI", sans-serif; background-color: #f9fafb; margin: 0; padding: 20px; color: #333; }
-          .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-          h1 { font-size: 22px; color: #111827; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-top: 0; }
-          .subtitle { margin-top: 4px; font-size: 14px; color: #6b7280; }
-          .items-applied { font-size: 13px; color: #4b5563; background-color: #f3f4f6; padding: 8px; border-radius: 6px; margin-top: 10px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-          th { text-align: left; color: #3b82f6; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding: 8px 0; }
-          td { padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
-          .section-title { margin-top: 30px; font-size: 16px; font-weight: bold; color: #3b82f6; }
-          .section-divider { border: 0; height: 1px; background: #e5e7eb; margin: 40px 0; }
-          .total-box { margin-top: 30px; background-color: #ecfdf5; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; }
-          .total-label { font-size: 14px; color: #065f46; }
-          .total-value { font-size: 22px; font-weight: bold; color: #047857; }
-          .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-          .btn-print { display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: background 0.3s; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; color: #212529; }
+          .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #3B82F6; padding-bottom: 10px; margin-bottom: 20px; }
+          h1 { font-size: 24px; color: #111827; margin: 0; }
+          .btn-print { font-family: inherit; font-size: 14px; background-color: #3B82F6; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; }
           .btn-print:hover { background-color: #2563eb; }
+          .subtitle { margin-top: 20px; font-size: 14px; color: #6c757d; }
+          .items-applied { font-size: 13px; color: #495057; background-color: #e9ecef; padding: 8px; border-radius: 6px; margin-top: 10px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+          th, td { text-align: left; padding: 12px 0; border-bottom: 1px solid #dee2e6; }
+          th { color: #3B82F6; font-weight: 600; }
+          td { color: #495057; }
+          td:last-child { text-align: right; font-weight: 500; }
+          thead { display: none; } /* Hide table headers for this design */
+          .section-title { margin-top: 30px; font-size: 16px; font-weight: 600; color: #3B82F6; display: flex; align-items: center; gap: 8px; }
+          .section-divider { border: 0; height: 1px; background: #e9ecef; margin: 40px 0; }
+          .total-box { margin-top: 30px; background-color: #E6F7F0; padding: 20px; border-radius: 8px; border-left: 4px solid #10B981; }
+          .total-label { font-size: 14px; color: #047857; display: flex; align-items: center; gap: 6px; font-weight: 500; }
+          .total-value { font-size: 24px; font-weight: bold; color: #059669; margin-top: 4px; }
           @media print {
             body { padding: 0; background-color: #fff; }
             .container { box-shadow: none; border-radius: 0; padding: 10px; }
-            .print-header { display: none; }
+            .header { display: none; }
           }
         </style>
       </head>
       <body>
         <div class="container">
-          <div class="print-header">
+          <div class="header">
             <h1>Relatório ICMS-ST - Consolidado</h1>
-            <button class="btn-print" onclick="window.print()">📄 Exportar para PDF</button>
+            <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
           </div>
           ${calculationsHtml}
           <div class="total-box">
@@ -498,7 +505,7 @@ export default function CalculoIcmsSt() {
           <h2 className="text-2xl font-bold font-headline">Resultados Consolidados</h2>
           <div className="flex gap-2 w-full sm:w-auto flex-wrap">
             <Button variant="outline" onClick={handleNewFullCalculation} className="flex-1"><PlusCircle className="mr-2 h-4 w-4" />Novo Cálculo</Button>
-            <Button onClick={handleExportToPdf} className="flex-1"><FileDown className="mr-2 h-4 w-4" />Exportar PDF</Button>
+            <Button onClick={handlePrint} className="flex-1"><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
             <Button asChild variant="secondary" className="flex-1">
               <a href="https://www4.fazenda.sp.gov.br/DareICMS/DareAvulso" target="_blank" rel="noopener noreferrer"><FileText className="mr-2 h-4 w-4" />Gerar DARE</a>
             </Button>
