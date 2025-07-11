@@ -1,163 +1,81 @@
 
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 import { useState, useEffect } from "react";
-import type { Task, TaskFormData } from "@/lib/definitions";
-import { taskSchema } from "@/lib/definitions";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import type { Chamado, ChamadoStatus } from "@/lib/definitions";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { ListChecks, Plus, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { AdminChamadosManagement } from "@/components/admin-chamados-management";
+import { AdminStatCard } from "./admin-stat-card";
+import { ListTodo, Loader, CheckCircle, AlertCircle } from "lucide-react";
 
 export function AdminTasks() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [chamados, setChamados] = useState<Chamado[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const loadChamados = () => {
+    setIsLoading(true);
     try {
-      const stored = localStorage.getItem("adminTasks");
-      if (stored) {
-        setTasks(JSON.parse(stored));
+      const storedChamados = localStorage.getItem("chamados");
+      if (storedChamados) {
+        setChamados(JSON.parse(storedChamados));
       }
     } catch (error) {
-      console.error("Failed to load tasks", error);
+      console.error("Failed to load chamados:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar chamados",
+        description: "Não foi possível carregar os dados dos chamados.",
+      });
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    loadChamados();
+    // Listen for changes from other tabs
+    window.addEventListener("storage", loadChamados);
+    return () => {
+      window.removeEventListener("storage", loadChamados);
+    };
   }, []);
 
-  const saveTasks = (updatedTasks: Task[]) => {
-    const sortedTasks = updatedTasks.sort((a, b) => {
-        if (a.status === b.status) {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        }
-        return a.status === 'Pendente' ? -1 : 1;
+  const handleUpdateStatus = (chamadoId: string, newStatus: ChamadoStatus) => {
+    const updatedChamados = chamados.map(c =>
+      c.id === chamadoId ? { ...c, status: newStatus } : c
+    );
+    setChamados(updatedChamados);
+    localStorage.setItem("chamados", JSON.stringify(updatedChamados));
+    toast({
+      title: "Status do chamado atualizado!",
+      description: `O chamado foi movido para "${newStatus}".`,
     });
-    setTasks(sortedTasks);
-    localStorage.setItem("adminTasks", JSON.stringify(sortedTasks));
   };
 
-  const form = useForm<TaskFormData>({
-    resolver: zodResolver(taskSchema),
-    defaultValues: {
-      title: "",
-    },
-  });
-
-  const onSubmit = (data: TaskFormData) => {
-    const newTask: Task = {
-      id: new Date().getTime().toString(),
-      title: data.title,
-      status: "Pendente",
-      createdAt: new Date().toISOString(),
-    };
-
-    saveTasks([...tasks, newTask]);
-    toast({ title: "Tarefa adicionada com sucesso!" });
-    form.reset();
+  const stats = {
+    aberto: chamados.filter(c => c.status === "Aberto").length,
+    emAndamento: chamados.filter(c => c.status === "Em Andamento").length,
+    resolvido: chamados.filter(c => c.status === "Resolvido").length,
   };
-  
-  const toggleStatus = (id: string) => {
-    const updated = tasks.map(t => t.id === id ? {...t, status: t.status === "Pendente" ? "Concluída" : "Pendente"}: t);
-    saveTasks(updated);
-  };
-
-  const deleteTask = (id: string) => {
-    saveTasks(tasks.filter(t => t.id !== id));
-    toast({ variant: "destructive", title: "Tarefa excluída." });
-  }
-
-  const clearCompleted = () => {
-    const pendingTasks = tasks.filter(t => t.status === "Pendente");
-    if (pendingTasks.length === tasks.length) {
-        toast({ title: "Nenhuma tarefa concluída para limpar." });
-        return;
-    }
-    saveTasks(pendingTasks);
-    toast({ title: "Tarefas concluídas foram removidas." });
-  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Gerenciador de Tarefas</CardTitle>
-        <CardDescription>Adicione, gerencie e conclua suas tarefas diárias.</CardDescription>
+        <CardTitle>Gerenciador de Trabalhos</CardTitle>
+        <CardDescription>
+          Acompanhe e gerencie todos os chamados em um painel Kanban.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex gap-2 items-start">
-             <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem className="flex-grow">
-                    <FormControl>
-                      <Input placeholder="Adicionar uma nova tarefa..." {...field} />
-                    </FormControl>
-                    <FormMessage className="mt-1" />
-                  </FormItem>
-                )}
-              />
-            <Button type="submit" disabled={form.formState.isSubmitting}>
-                <Plus className="mr-2 h-4 w-4" /> Adicionar
-            </Button>
-          </form>
-        </Form>
-         <div className="rounded-md border">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[50px]"></TableHead>
-                        <TableHead>Tarefa</TableHead>
-                        <TableHead className="hidden md:table-cell w-[150px]">Criada em</TableHead>
-                        <TableHead className="text-right w-[120px]">
-                            <Button variant="ghost" size="sm" onClick={clearCompleted} disabled={!tasks.some(t => t.status === 'Concluída')}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Limpar
-                            </Button>
-                        </TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                   {tasks.length > 0 ? tasks.map(task => (
-                     <TableRow key={task.id} className={cn(task.status === 'Concluída' && 'bg-muted/50')}>
-                       <TableCell>
-                          <Checkbox
-                            checked={task.status === 'Concluída'}
-                            onCheckedChange={() => toggleStatus(task.id)}
-                            aria-label="Marcar como concluída"
-                          />
-                       </TableCell>
-                       <TableCell className={cn("font-medium", task.status === 'Concluída' && 'line-through text-muted-foreground')}>
-                            {task.title}
-                       </TableCell>
-                       <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
-                         {format(new Date(task.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                       </TableCell>
-                       <TableCell className="text-right">
-                            <Button size="icon" variant="ghost" onClick={() => deleteTask(task.id)} title="Excluir Tarefa">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                       </TableCell>
-                     </TableRow>
-                   )) : (
-                     <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
-                            <ListChecks className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                            Nenhuma tarefa por aqui. Adicione uma acima!
-                        </TableCell>
-                    </TableRow>
-                   )}
-                </TableBody>
-            </Table>
-         </div>
+        <div className="grid gap-4 md:grid-cols-3">
+            <AdminStatCard title="Abertos" value={stats.aberto} description="Chamados aguardando início." icon={AlertCircle} color="red" />
+            <AdminStatCard title="Em Andamento" value={stats.emAndamento} description="Chamados sendo trabalhados." icon={Loader} color="yellow" />
+            <AdminStatCard title="Resolvidos" value={stats.resolvido} description="Chamados finalizados." icon={CheckCircle} color="green" />
+        </div>
+        <AdminChamadosManagement chamados={chamados} onUpdateStatus={handleUpdateStatus} />
       </CardContent>
     </Card>
-  )
+  );
 }
