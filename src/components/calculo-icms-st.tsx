@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileDown, Briefcase, Building, FileText, Search, Clipboard, ArrowRight, PlusCircle, Pencil, Printer } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileText, Briefcase, Building, Search, Clipboard, ArrowRight, PlusCircle, Pencil, Printer } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
@@ -260,9 +260,9 @@ export default function CalculoIcmsSt() {
     if (completedCalculations.length === 0) return;
 
     const calculationsHtml = completedCalculations.map((calc, index) => {
-      const valorMercadoria = parseLocaleString(calc.formData.valorMercadoria);
-      const valorFrete = parseLocaleString(calc.formData.valorFrete || "0");
-      const aliqIcms = parseLocaleString(calc.formData.aliqIcms);
+        const valorMercadoria = calc.formData.operationType === 'pecas'
+            ? parseLocaleString(calc.formData.valorMercadoria)
+            : parseLocaleString(calc.formData.valorMercadoria) + calc.result.valorIpi;
 
       return `
         <div class="subtitle">
@@ -272,53 +272,52 @@ export default function CalculoIcmsSt() {
 
         <div class="section-title">📍 Detalhes da Operação</div>
         <table>
-          <tbody>
-            <tr><td>NCM</td><td style="text-align: right;">${calc.formData.ncm || 'N/A'}</td></tr>
-            <tr><td>${calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria"}</td><td style="text-align: right;">${formatCurrency(valorMercadoria)}</td></tr>
-            <tr><td>Valor do Frete</td><td style="text-align: right;">${formatCurrency(valorFrete)}</td></tr>
-            <tr><td>Valor do IPI</td><td style="text-align: right;">${formatCurrency(calc.result.valorIpi)}</td></tr>
-            <tr><td>Alíquota ICMS</td><td style="text-align: right;">${formatPercent(calc.formData.aliqIcms)}</td></tr>
-            <tr><td>IVA/MVA</td><td style="text-align: right;">${formatPercent(calc.formData.mva)}</td></tr>
-            <tr><td>Alíquota ICMS-ST</td><td style="text-align: right;">${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
-          </tbody>
+          <tr><th>Campo</th><th>Valor</th></tr>
+          <tr><td>NCM</td><td>${calc.formData.ncm || 'N/A'}</td></tr>
+          <tr><td>${calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria"}</td><td>${formatCurrency(parseLocaleString(calc.formData.valorMercadoria))}</td></tr>
+          <tr><td>Valor do Frete</td><td>${formatCurrency(parseLocaleString(calc.formData.valorFrete || '0'))}</td></tr>
+          <tr><td>Valor do IPI</td><td>${formatCurrency(calc.result.valorIpi)}</td></tr>
+          <tr><td>Alíquota ICMS</td><td>${formatPercent(calc.formData.aliqIcms)}</td></tr>
+          <tr><td>IVA/MVA</td><td>${formatPercent(calc.formData.mva)}</td></tr>
+          <tr><td>Alíquota ICMS-ST</td><td>${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
         </table>
 
         <div class="section-title">📊 Resultados do Cálculo</div>
         <table>
-          <tbody>
-            <tr><td>ICMS Próprio</td><td style="text-align: right;">${formatCurrency(calc.result.valorIcmsProprio)}</td></tr>
-            <tr><td>Base de Cálculo ST</td><td style="text-align: right;">${formatCurrency(calc.result.baseSt)}</td></tr>
-            <tr><td>ICMS-ST</td><td style="text-align: right;"><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
-            <tr><td>Base PIS/COFINS</td><td style="text-align: right;">${formatCurrency(calc.result.basePisCofins)}</td></tr>
-            <tr><td>Total da Nota</td><td style="text-align: right;">${formatCurrency(calc.result.valorTotalNota)}</td></tr>
-          </tbody>
+          <tr><th>Campo</th><th>Valor</th></tr>
+          <tr><td>ICMS Próprio</td><td>${formatCurrency(calc.result.valorIcmsProprio)}</td></tr>
+          <tr><td>Base de Cálculo ST</td><td>${formatCurrency(calc.result.baseSt)}</td></tr>
+          <tr><td>ICMS-ST</td><td><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
+          <tr><td>Base PIS/COFINS</td><td>${formatCurrency(calc.result.basePisCofins)}</td></tr>
+          <tr><td>Total da Nota</td><td><strong>${formatCurrency(calc.result.valorTotalNota)}</strong></td></tr>
         </table>
       `;
     }).join('<hr class="section-divider">');
 
     const totalSt = completedCalculations.reduce((acc, calc) => acc + calc.result.valorSt, 0);
 
-    const summaryPageHtml = completedCalculations.map((calc, index) => {
+    const summarySlipsHtml = completedCalculations.map((calc, index) => {
         const aliqInternaNum = parseLocaleString(calc.formData.aliqIcmsSt);
         const redBaseStNum = parseLocaleString(calc.formData.redBaseSt || "0");
         const reduzidoHtml = redBaseStNum > 0 
-            ? `<tr><td>Reduzido</td><td style="text-align: right;">${(aliqInternaNum * (1 - redBaseStNum / 100)).toFixed(2)}%</td></tr>` 
+            ? `<div class="slip-item"><span>Reduzido:</span> <strong>${(aliqInternaNum * (1 - redBaseStNum / 100)).toFixed(2).replace('.', ',')}%</strong></div>`
             : '';
 
-        return `
-            <div class="subtitle">
-                Resumo do Cálculo ${index + 1}
+        const slipContent = `
+            <div class="slip-header">Resumo do Cálculo ${index + 1}</div>
+            <div class="slip-body">
+                <div class="slip-item"><span>Alíquota Interna:</span> <strong>${formatPercent(calc.formData.aliqIcmsSt)}</strong></div>
+                <div class="slip-item"><span>IVA/MVA:</span> <strong>${formatPercent(calc.formData.mva)}</strong></div>
+                ${reduzidoHtml}
+                <div class="slip-item-total">
+                    <span>Valor da Guia:</span>
+                    <strong>${formatCurrency(calc.result.valorSt)}</strong>
+                </div>
             </div>
-            <table>
-                <tbody>
-                    <tr><td>Alíquota Interna</td><td style="text-align: right;">${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
-                    <tr><td>IVA/MVA</td><td style="text-align: right;">${formatPercent(calc.formData.mva)}</td></tr>
-                    ${reduzidoHtml}
-                    <tr><td>Valor da Guia</td><td style="text-align: right;"><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
-                </tbody>
-            </table>
         `;
-    }).join('<hr class="section-divider">');
+        // Repeat the slip to fill the page
+        return Array(6).fill(`<div class="summary-slip">${slipContent}</div>`).join('');
+    }).join('<div class="page-break"></div>');
 
 
     const htmlContent = `
@@ -328,7 +327,8 @@ export default function CalculoIcmsSt() {
         <meta charset="UTF-8" />
         <title>Relatório ICMS-ST</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; color: #212529; }
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+          body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; color: #212529; }
           .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; }
           .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #3B82F6; padding-bottom: 10px; margin-bottom: 20px; }
           h1 { font-size: 24px; color: #111827; margin: 0; }
@@ -337,14 +337,24 @@ export default function CalculoIcmsSt() {
           .subtitle { margin-top: 20px; font-size: 14px; color: #6c757d; }
           .items-applied { font-size: 13px; color: #495057; background-color: #e9ecef; padding: 8px; border-radius: 6px; margin-top: 10px; }
           table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-          td { text-align: left; padding: 12px 0; border-bottom: 1px solid #dee2e6; color: #495057; }
-          thead { display: none; }
-          .section-title { margin-top: 30px; font-size: 16px; font-weight: 600; color: #3B82F6; display: flex; align-items: center; gap: 8px; }
+          th { text-align: left; color: #3b82f6; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding: 10px 4px; }
+          td { text-align: left; padding: 12px 4px; border-bottom: 1px solid #f3f4f6; color: #4b5563; }
+          td:last-child { text-align: right; font-weight: 600; color: #1f2937; }
+          .section-title { margin-top: 30px; font-size: 16px; font-weight: 700; color: #3B82F6; display: flex; align-items: center; gap: 8px; }
           .section-divider { border: 0; height: 1px; background: #e9ecef; margin: 40px 0; }
-          .page-break { page-break-before: always; }
           .total-box { margin-top: 30px; background-color: #E6F7F0; padding: 20px; border-radius: 8px; border-left: 4px solid #10B981; }
-          .total-label { font-size: 14px; color: #047857; display: flex; align-items: center; gap: 6px; font-weight: 500; }
-          .total-value { font-size: 24px; font-weight: bold; color: #059669; margin-top: 4px; }
+          .total-label { font-size: 14px; color: #047857; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+          .total-value { font-size: 24px; font-weight: 700; color: #059669; margin-top: 4px; }
+          .page-break { page-break-before: always; }
+
+          .summary-slip-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+          .summary-slip { border: 1.5px dashed #a0aec0; padding: 15px; border-radius: 8px; page-break-inside: avoid; }
+          .slip-header { font-weight: 700; font-size: 14px; color: #3b82f6; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; }
+          .slip-body { font-size: 13px; }
+          .slip-item { display: flex; justify-content: space-between; padding: 4px 0; }
+          .slip-item span { color: #4a5568; }
+          .slip-item-total { display: flex; justify-content: space-between; padding-top: 8px; margin-top: 8px; border-top: 1px solid #e2e8f0; font-weight: 700; font-size: 14px; }
+          
           @media print {
             body { padding: 0; background-color: #fff; }
             .container { box-shadow: none; border-radius: 0; padding: 10px; }
@@ -366,12 +376,14 @@ export default function CalculoIcmsSt() {
             <div class="total-value">${formatCurrency(totalSt)}</div>
           </div>
           
-          <!-- Page 2: Summary -->
+          <!-- Page 2: Summary Slips -->
           <div class="page-break">
-            <div class="header">
-                <h1>Resumo dos Cálculos</h1>
+             <div class="header">
+                <h1>Folha de Resumos para Anexar</h1>
             </div>
-            ${summaryPageHtml}
+            <div class="summary-slip-container">
+              ${summarySlipsHtml}
+            </div>
           </div>
 
         </div>
