@@ -259,40 +259,67 @@ export default function CalculoIcmsSt() {
   const handlePrint = () => {
     if (completedCalculations.length === 0) return;
 
-    const calculationsHtml = completedCalculations.map((calc, index) => `
-      <div class="subtitle">
-        Cálculo ${index + 1} de ${completedCalculations.length} · Tipo: <strong>${calc.formData.operationType}</strong> · Fornecedor: <strong>${calc.formData.fornecedor || 'N/A'}</strong>
-      </div>
-      ${calc.formData.items ? `<div class="items-applied">Aplicado aos itens: <strong>${calc.formData.items}</strong></div>` : ''}
+    const calculationsHtml = completedCalculations.map((calc, index) => {
+      const valorMercadoria = parseLocaleString(calc.formData.valorMercadoria);
+      const valorFrete = parseLocaleString(calc.formData.valorFrete || "0");
+      const aliqIcms = parseLocaleString(calc.formData.aliqIcms);
 
-      <div class="section-title">📍 Detalhes da Operação</div>
-      <table>
-        <thead><tr><th>Campo</th><th>Valor</th></tr></thead>
-        <tbody>
-          <tr><td>NCM</td><td>${calc.formData.ncm || 'N/A'}</td></tr>
-          <tr><td>${calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria"}</td><td>${formatCurrency(parseLocaleString(calc.formData.valorMercadoria))}</td></tr>
-          <tr><td>Valor do Frete</td><td>${formatCurrency(parseLocaleString(calc.formData.valorFrete || "0"))}</td></tr>
-          <tr><td>Valor do IPI</td><td>${formatCurrency(calc.result.valorIpi)}</td></tr>
-          <tr><td>Alíquota ICMS</td><td>${formatPercent(calc.formData.aliqIcms)}</td></tr>
-          <tr><td>IVA/MVA</td><td>${formatPercent(calc.formData.mva)}</td></tr>
-          <tr><td>Alíquota ICMS-ST</td><td>${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
-        </tbody>
-      </table>
+      return `
+        <div class="subtitle">
+          Cálculo ${index + 1} de ${completedCalculations.length} · Tipo: <strong>${calc.formData.operationType}</strong> · Fornecedor: <strong>${calc.formData.fornecedor || 'N/A'}</strong>
+        </div>
+        ${calc.formData.items ? `<div class="items-applied">Aplicado aos itens: <strong>${calc.formData.items}</strong></div>` : ''}
 
-      <div class="section-title">📊 Resultados do Cálculo</div>
-      <table>
-        <thead><tr><th>Campo</th><th>Valor</th></tr></thead>
-        <tbody>
-          <tr><td>ICMS Próprio</td><td>${formatCurrency(calc.result.valorIcmsProprio)}</td></tr>
-          <tr><td>Base de Cálculo ST</td><td>${formatCurrency(calc.result.baseSt)}</td></tr>
-          <tr><td>ICMS-ST</td><td><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
-          <tr><td>Base PIS/COFINS</td><td>${formatCurrency(calc.result.basePisCofins)}</td></tr>
-          <tr><td>Total da Nota</td><td>${formatCurrency(calc.result.valorTotalNota)}</td></tr>
-        </tbody>
-      </table>
-    `).join('<hr class="section-divider">');
+        <div class="section-title">📍 Detalhes da Operação</div>
+        <table>
+          <tbody>
+            <tr><td>NCM</td><td style="text-align: right;">${calc.formData.ncm || 'N/A'}</td></tr>
+            <tr><td>${calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria"}</td><td style="text-align: right;">${formatCurrency(valorMercadoria)}</td></tr>
+            <tr><td>Valor do Frete</td><td style="text-align: right;">${formatCurrency(valorFrete)}</td></tr>
+            <tr><td>Valor do IPI</td><td style="text-align: right;">${formatCurrency(calc.result.valorIpi)}</td></tr>
+            <tr><td>Alíquota ICMS</td><td style="text-align: right;">${formatPercent(calc.formData.aliqIcms)}</td></tr>
+            <tr><td>IVA/MVA</td><td style="text-align: right;">${formatPercent(calc.formData.mva)}</td></tr>
+            <tr><td>Alíquota ICMS-ST</td><td style="text-align: right;">${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">📊 Resultados do Cálculo</div>
+        <table>
+          <tbody>
+            <tr><td>ICMS Próprio</td><td style="text-align: right;">${formatCurrency(calc.result.valorIcmsProprio)}</td></tr>
+            <tr><td>Base de Cálculo ST</td><td style="text-align: right;">${formatCurrency(calc.result.baseSt)}</td></tr>
+            <tr><td>ICMS-ST</td><td style="text-align: right;"><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
+            <tr><td>Base PIS/COFINS</td><td style="text-align: right;">${formatCurrency(calc.result.basePisCofins)}</td></tr>
+            <tr><td>Total da Nota</td><td style="text-align: right;">${formatCurrency(calc.result.valorTotalNota)}</td></tr>
+          </tbody>
+        </table>
+      `;
+    }).join('<hr class="section-divider">');
 
     const totalSt = completedCalculations.reduce((acc, calc) => acc + calc.result.valorSt, 0);
+
+    const summaryPageHtml = completedCalculations.map((calc, index) => {
+        const aliqInternaNum = parseLocaleString(calc.formData.aliqIcmsSt);
+        const redBaseStNum = parseLocaleString(calc.formData.redBaseSt || "0");
+        const reduzidoHtml = redBaseStNum > 0 
+            ? `<tr><td>Reduzido</td><td style="text-align: right;">${(aliqInternaNum * (1 - redBaseStNum / 100)).toFixed(2)}%</td></tr>` 
+            : '';
+
+        return `
+            <div class="subtitle">
+                Resumo do Cálculo ${index + 1}
+            </div>
+            <table>
+                <tbody>
+                    <tr><td>Alíquota Interna</td><td style="text-align: right;">${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
+                    <tr><td>IVA/MVA</td><td style="text-align: right;">${formatPercent(calc.formData.mva)}</td></tr>
+                    ${reduzidoHtml}
+                    <tr><td>Valor da Guia</td><td style="text-align: right;"><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
+                </tbody>
+            </table>
+        `;
+    }).join('<hr class="section-divider">');
+
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -310,13 +337,11 @@ export default function CalculoIcmsSt() {
           .subtitle { margin-top: 20px; font-size: 14px; color: #6c757d; }
           .items-applied { font-size: 13px; color: #495057; background-color: #e9ecef; padding: 8px; border-radius: 6px; margin-top: 10px; }
           table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-          th, td { text-align: left; padding: 12px 0; border-bottom: 1px solid #dee2e6; }
-          th { color: #3B82F6; font-weight: 600; }
-          td { color: #495057; }
-          td:last-child { text-align: right; font-weight: 500; }
-          thead { display: none; } /* Hide table headers for this design */
+          td { text-align: left; padding: 12px 0; border-bottom: 1px solid #dee2e6; color: #495057; }
+          thead { display: none; }
           .section-title { margin-top: 30px; font-size: 16px; font-weight: 600; color: #3B82F6; display: flex; align-items: center; gap: 8px; }
           .section-divider { border: 0; height: 1px; background: #e9ecef; margin: 40px 0; }
+          .page-break { page-break-before: always; }
           .total-box { margin-top: 30px; background-color: #E6F7F0; padding: 20px; border-radius: 8px; border-left: 4px solid #10B981; }
           .total-label { font-size: 14px; color: #047857; display: flex; align-items: center; gap: 6px; font-weight: 500; }
           .total-value { font-size: 24px; font-weight: bold; color: #059669; margin-top: 4px; }
@@ -333,11 +358,22 @@ export default function CalculoIcmsSt() {
             <h1>Relatório ICMS-ST - Consolidado</h1>
             <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
           </div>
+          
+          <!-- Page 1: Detailed Calculations -->
           ${calculationsHtml}
           <div class="total-box">
             <div class="total-label">✅ Total do ICMS-ST:</div>
             <div class="total-value">${formatCurrency(totalSt)}</div>
           </div>
+          
+          <!-- Page 2: Summary -->
+          <div class="page-break">
+            <div class="header">
+                <h1>Resumo dos Cálculos</h1>
+            </div>
+            ${summaryPageHtml}
+          </div>
+
         </div>
       </body>
       </html>
