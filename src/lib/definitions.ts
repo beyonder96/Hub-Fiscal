@@ -212,7 +212,7 @@ export const icmsStSchema = z.object({
   aliqIcms: numericString("Alíquota ICMS é obrigatória."),
   mva: numericString("IVA/MVA é obrigatório."),
   aliqIcmsSt: numericString("Alíquota ICMS-ST é obrigatória."),
-  redBaseSt: numericString("Valor inválido.").optional().or(z.literal('')),
+  origem4: z.boolean().optional(),
 }).superRefine((data, ctx) => {
     if (data.operationType === 'pecas' && (!data.aliqIpi || parseFloat(data.aliqIpi.replace(/\./g, '').replace(',', '.')) <= 0)) {
         ctx.addIssue({
