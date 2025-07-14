@@ -455,20 +455,11 @@ export function XmlValidator() {
     if (!result.nfeData) return;
     const { nfeData } = result;
     
-    const valorMercadoria = nfeData.products.reduce((acc, p) => acc + parseFloat(p.vProd || '0'), 0);
-    const valorFrete = parseFloat(nfeData.vFrete || '0');
-    const valorIpi = parseFloat(nfeData.total.vIPI || '0');
-    const aliqIcms = parseFloat(nfeData.products[0]?.icms.pICMS || '0');
-    const origem4 = nfeData.products.some(p => p.cst?.startsWith('4'));
-    const operationType = nfeData.products[0]?.cfop === '6152' ? 'transferencia' : 'compra';
-    
     const prefillData = {
-        valorMercadoria,
-        valorFrete,
-        valorIpi,
-        aliqIcms,
-        origem4,
-        operationType,
+        products: nfeData.products,
+        aliqIcms: nfeData.products[0]?.icms.pICMS,
+        origem4: nfeData.products.some(p => p.cst?.startsWith('4')),
+        operationType: nfeData.products[0]?.cfop === '6152' ? 'transferencia' : 'compra',
         fornecedor: nfeData.emitRazaoSocial,
         ncm: nfeData.products[0]?.ncm,
     };
@@ -538,22 +529,18 @@ export function XmlValidator() {
   }
 
   const checkStCalculationNeeded = (nfeData: NfeData | null): boolean => {
-    if (!nfeData) return false;
-
-    const { destUf, emitUf } = nfeData;
-
+    if (!nfeData || !nfeData.destUf || !nfeData.emitUf) return false;
+    
     // Condition 1: Destination must be SP
-    if (destUf !== 'SP') return false;
+    if (nfeData.destUf !== 'SP') return false;
 
     // Condition 2: Origin must not be SP
-    if (emitUf === 'SP') return false;
+    if (nfeData.emitUf === 'SP') return false;
 
     // Condition 3: The origin state must not have a protocol.
-    const originStateData = initialTaxRates.find(r => r.destinationStateCode === emitUf);
+    const originStateData = initialTaxRates.find(r => r.destinationStateCode === nfeData.emitUf);
     
-    // If we can't find the origin state's data, we can't determine protocol status.
-    // Safest to assume calculation might be needed. Or we could return false.
-    // For this use case, let's assume if it's not in our list, it doesn't have a protocol.
+    // If we can't find the origin state's data, assume no protocol.
     if (!originStateData) return true;
 
     // Show button only if the origin state does NOT have a protocol

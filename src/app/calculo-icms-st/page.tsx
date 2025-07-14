@@ -19,7 +19,16 @@ const CalculoIcmsSt = dynamic(() => import('@/components/calculo-icms-st'), {
 function CalculoPageContent() {
   const searchParams = useSearchParams();
   const stData = searchParams.get('stData');
-  const prefillData = stData ? JSON.parse(stData) : null;
+  
+  let prefillData = null;
+  try {
+    if (stData) {
+        prefillData = JSON.parse(stData);
+    }
+  } catch(e) {
+      console.error("Failed to parse stData from URL", e);
+  }
+
 
   return <CalculoIcmsSt prefillData={prefillData} />;
 }

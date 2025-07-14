@@ -201,26 +201,14 @@ const numericString = (errorMessage: string) =>
   }, { message: "Valor inválido." });
 
 export const icmsStSchema = z.object({
-  items: z.string().optional(),
   operationType: z.enum(['compra', 'transferencia', 'pecas'], { required_error: "Selecione o tipo de operação." }),
   ncm: z.string().optional(),
   fornecedor: z.string().optional(),
-  valorMercadoria: numericString("Este campo é obrigatório."),
-  valorFrete: numericString("Valor inválido.").optional().or(z.literal('')),
-  valorIpi: numericString("Valor inválido.").optional().or(z.literal('')),
   aliqIpi: numericString("Valor inválido.").optional().or(z.literal('')),
   aliqIcms: numericString("Alíquota ICMS é obrigatória."),
   mva: numericString("IVA/MVA é obrigatório."),
   aliqIcmsSt: numericString("Alíquota ICMS-ST é obrigatória."),
   origem4: z.boolean().optional(),
-}).superRefine((data, ctx) => {
-    if (data.operationType === 'pecas' && (!data.aliqIpi || parseFloat(data.aliqIpi.replace(/\./g, '').replace(',', '.')) <= 0)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['aliqIpi'],
-            message: 'Alíquota IPI é obrigatória para esta operação.'
-        });
-    }
 });
 
 export type IcmsStFormData = z.infer<typeof icmsStSchema>;

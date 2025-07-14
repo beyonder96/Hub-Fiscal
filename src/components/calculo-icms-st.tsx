@@ -4,15 +4,14 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { IcmsStFormData } from "@/lib/definitions";
+import type { IcmsStFormData, NfeProductData } from "@/lib/definitions";
 import { icmsStSchema } from "@/lib/definitions";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileText, Briefcase, Building, Search, Clipboard, ArrowRight, PlusCircle, Pencil, Printer, PackageCheck } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileText, Briefcase, Building, Search, Clipboard, ArrowRight, PlusCircle, Pencil, Printer, PackageCheck, ListChecks } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
@@ -20,6 +19,8 @@ import { dareSupplierData } from "@/lib/dare-data";
 import { ScrollArea } from "./ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "./ui/switch";
+import { Checkbox } from "./ui/checkbox";
+import { Badge } from "./ui/badge";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -45,8 +46,10 @@ interface CalculationResult {
 }
 
 interface CompletedCalculation {
+  id: string;
   formData: IcmsStFormData;
   result: CalculationResult;
+  selectedItems: NfeProductData[];
 }
 
 const ResultCard = ({ title, value, isPrimary = false }: { title: string, value: string | number, isPrimary?: boolean }) => (
@@ -121,11 +124,10 @@ const DareHelper = () => {
 }
 
 export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
-  const [step, setStep] = useState<'setup' | 'calculating' | 'results'>('setup');
-  const [numberOfCalculations, setNumberOfCalculations] = useState(1);
-  const [currentCalculationIndex, setCurrentCalculationIndex] = useState(0);
+  const [step, setStep] = useState<'calculating' | 'results'>('calculating');
   const [completedCalculations, setCompletedCalculations] = useState<CompletedCalculation[]>([]);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   
   const [ivaOriginal, setIvaOriginal] = useState("");
   const [aliqInter, setAliqInter] = useState("");
@@ -137,14 +139,10 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
   const form = useForm<IcmsStFormData>({
     resolver: zodResolver(icmsStSchema),
     defaultValues: {
-      items: "",
       operationType: "compra",
       ncm: "",
       fornecedor: "",
-      valorMercadoria: "",
-      valorFrete: "",
       aliqIpi: "",
-      valorIpi: "",
       aliqIcms: "",
       mva: "",
       aliqIcmsSt: "",
@@ -152,60 +150,72 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
     },
   });
   
+  const availableProducts = prefillData?.products?.filter((p: NfeProductData) => 
+    !completedCalculations.some(calc => calc.selectedItems.some(item => item.item === p.item))
+  ) || [];
+
   useEffect(() => {
-    // This effect now only sets up the form for the first calculation
-    if (prefillData && step === 'calculating' && currentCalculationIndex === 0 && completedCalculations.length === 0) {
+    if (prefillData && !editingId) {
       form.reset({
         ...form.getValues(),
-        ...prefillData,
-        valorMercadoria: prefillData.valorMercadoria?.toString().replace('.', ',') ?? '',
-        valorFrete: prefillData.valorFrete?.toString().replace('.', ',') ?? '',
-        valorIpi: prefillData.valorIpi?.toString().replace('.', ',') ?? '',
+        operationType: prefillData.operationType,
+        fornecedor: prefillData.fornecedor,
+        ncm: prefillData.ncm,
+        origem4: prefillData.origem4,
         aliqIcms: prefillData.aliqIcms?.toString().replace('.', ',') ?? '',
       });
     }
-  }, [prefillData, step, currentCalculationIndex, completedCalculations, form]);
+  }, [prefillData, editingId]);
 
-  const operationType = form.watch("operationType");
   const parseLocaleString = (value: string) => parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
 
-  const handleStart = () => {
-    if (numberOfCalculations > 0) {
-      setStep('calculating');
-      setCurrentCalculationIndex(0);
-      setCompletedCalculations([]);
-      form.reset();
-    }
-  };
-
   const handleNewFullCalculation = () => {
-    setStep('setup');
-    setNumberOfCalculations(1);
+    setStep('calculating');
     setCompletedCalculations([]);
     setIvaAjustado(null);
+    setSelectedItemIds([]);
     form.reset();
-     // Clear URL params
     window.history.replaceState({}, '', '/calculo-icms-st');
   };
 
+  const handleNewCalculationGroup = () => {
+    setEditingId(null);
+    setSelectedItemIds([]);
+    form.reset({
+        operationType: prefillData.operationType,
+        fornecedor: prefillData.fornecedor,
+        ncm: '',
+        origem4: false,
+        aliqIcms: prefillData.aliqIcms?.toString().replace('.', ',') ?? '',
+    });
+    toast({ title: "Pronto para o próximo grupo de itens." });
+  };
+  
+  const calculateProportionalValues = (selectedIds: string[]) => {
+      if (!prefillData?.products || selectedIds.length === 0) {
+        return { valorMercadoria: 0, valorFrete: 0, valorIpi: 0 };
+      }
+      return prefillData.products
+        .filter((p: NfeProductData) => selectedIds.includes(p.item))
+        .reduce((acc, p) => {
+            acc.valorMercadoria += parseFloat(p.vProd || '0');
+            acc.valorFrete += parseFloat(p.vFrete || '0');
+            acc.valorIpi += parseFloat(p.ipi?.vIPI || '0');
+            return acc;
+        }, { valorMercadoria: 0, valorFrete: 0, valorIpi: 0 });
+  }
+
   const onSubmit = (data: IcmsStFormData) => {
-    let valorMercadoria = 0;
-    let valorIpi = 0;
-    const valorFrete = parseLocaleString(data.valorFrete || "0");
+    if (selectedItemIds.length === 0) {
+        toast({ variant: 'destructive', title: 'Nenhum item selecionado', description: 'Por favor, selecione ao menos um item da nota para calcular.' });
+        return;
+    }
+    const { valorMercadoria, valorFrete, valorIpi } = calculateProportionalValues(selectedItemIds);
+    
     const aliqIcms = parseLocaleString(data.aliqIcms);
     const mva = parseLocaleString(data.mva);
     const aliqIcmsSt = parseLocaleString(data.aliqIcmsSt);
     const redBaseSt = data.origem4 ? 33.33 : 0;
-
-    if (data.operationType === 'pecas') {
-      const aliqIpi = parseLocaleString(data.aliqIpi || "0");
-      const valorTotalComIpi = parseLocaleString(data.valorMercadoria);
-      valorMercadoria = parseFloat((valorTotalComIpi / (1 + (aliqIpi / 100))).toFixed(2));
-      valorIpi = parseFloat((valorTotalComIpi - valorMercadoria).toFixed(2));
-    } else if (data.operationType === 'compra' || data.operationType === 'transferencia') {
-      valorMercadoria = parseLocaleString(data.valorMercadoria);
-      valorIpi = parseLocaleString(data.valorIpi || "0");
-    }
 
     const baseIcmsProprio = valorMercadoria + valorFrete;
     const valorIcmsProprio = parseFloat((baseIcmsProprio * (aliqIcms / 100)).toFixed(2));
@@ -216,12 +226,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
     const valorStBruto = (baseSt * (aliqIcmsSt / 100)) - valorIcmsProprio;
     const valorSt = valorStBruto > 0 ? parseFloat(valorStBruto.toFixed(2)) : 0;
 
-    let valorTotalNota;
-    if (data.operationType === 'pecas') {
-      valorTotalNota = parseLocaleString(data.valorMercadoria) + valorFrete + valorSt;
-    } else {
-      valorTotalNota = valorMercadoria + valorFrete + valorIpi + valorSt;
-    }
+    let valorTotalNota = valorMercadoria + valorFrete + valorIpi + valorSt;
     
     const basePisCofins = data.operationType === 'compra'
         ? baseIcmsProprio - valorIcmsProprio
@@ -235,58 +240,47 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
       valorIcmsProprio,
       valorIpi
     };
+    
+    const selectedItems = prefillData.products.filter((p: NfeProductData) => selectedItemIds.includes(p.item));
+    const completedCalc: CompletedCalculation = { id: editingId || new Date().getTime().toString(), formData: data, result, selectedItems };
 
-    const completedCalc: CompletedCalculation = { formData: data, result };
-
-    if (editingIndex !== null) {
-        const updatedCalculations = completedCalculations.map((calc, index) => 
-            index === editingIndex ? completedCalc : calc
+    if (editingId) {
+        const updatedCalculations = completedCalculations.map((calc) => 
+            calc.id === editingId ? completedCalc : calc
         );
         setCompletedCalculations(updatedCalculations);
-        setEditingIndex(null);
-        setStep('results');
-        toast({ title: `Cálculo ${editingIndex + 1} atualizado!` });
-        form.reset();
+        setEditingId(null);
+        toast({ title: `Cálculo atualizado!` });
     } else {
-        const updatedCalculations = [...completedCalculations, completedCalc];
-        setCompletedCalculations(updatedCalculations);
-
-        if (currentCalculationIndex < numberOfCalculations - 1) {
-            setCurrentCalculationIndex(prev => prev + 1);
-            toast({
-                title: `Cálculo ${currentCalculationIndex + 1} salvo!`,
-                description: `Preencha os dados para o cálculo ${currentCalculationIndex + 2}.`
-            });
-            form.reset({
-                ...data,
-                items: "",
-                valorMercadoria: "",
-                valorFrete: "",
-                valorIpi: ""
-            });
-        } else {
-            setStep('results');
-        }
+        setCompletedCalculations(prev => [...prev, completedCalc]);
+        toast({ title: `Grupo de cálculo adicionado!` });
     }
+    handleNewCalculationGroup();
   };
   
   const handlePrint = () => {
     if (completedCalculations.length === 0) return;
 
     const calculationsHtml = completedCalculations.map((calc, index) => {
+        const itemsList = calc.selectedItems.map(p => `<li>${p.xProd} (Item ${p.item})</li>`).join('');
+        const proportionalValues = calculateProportionalValues(calc.selectedItems.map(i => i.item));
+
         return `
         <div class="subtitle">
           Cálculo ${index + 1} de ${completedCalculations.length} · Tipo: <strong>${calc.formData.operationType}</strong> · Fornecedor: <strong>${calc.formData.fornecedor || 'N/A'}</strong>
         </div>
-        ${calc.formData.items ? `<div class="items-applied">Aplicado aos itens: <strong>${calc.formData.items}</strong></div>` : ''}
+        <div class="items-applied">
+            <strong>Itens Aplicados:</strong>
+            <ul>${itemsList}</ul>
+        </div>
 
-        <div class="section-title">📍 Detalhes da Operação</div>
+        <div class="section-title">📍 Detalhes da Operação (Proporcional)</div>
         <table>
           <tr><th>Campo</th><th style="text-align:right;">Valor</th></tr>
           <tr><td>NCM</td><td style="text-align:right;">${calc.formData.ncm || 'N/A'}</td></tr>
-          <tr><td>${calc.formData.operationType === 'pecas' ? "Valor Total c/ IPI" : "Valor Mercadoria"}</td><td style="text-align:right;">${formatCurrency(parseLocaleString(calc.formData.valorMercadoria))}</td></tr>
-          <tr><td>Valor do Frete</td><td style="text-align:right;">${formatCurrency(parseLocaleString(calc.formData.valorFrete || '0'))}</td></tr>
-          <tr><td>Valor do IPI</td><td style="text-align:right;">${formatCurrency(calc.result.valorIpi)}</td></tr>
+          <tr><td>Valor Mercadoria (Itens)</td><td style="text-align:right;">${formatCurrency(proportionalValues.valorMercadoria)}</td></tr>
+          <tr><td>Valor do Frete (Itens)</td><td style="text-align:right;">${formatCurrency(proportionalValues.valorFrete)}</td></tr>
+          <tr><td>Valor do IPI (Itens)</td><td style="text-align:right;">${formatCurrency(proportionalValues.valorIpi)}</td></tr>
           <tr><td>Alíquota ICMS</td><td style="text-align:right;">${formatPercent(calc.formData.aliqIcms)}</td></tr>
           <tr><td>IVA/MVA</td><td style="text-align:right;">${formatPercent(calc.formData.mva)}</td></tr>
           <tr><td>Alíquota ICMS-ST</td><td style="text-align:right;">${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
@@ -299,7 +293,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
           <tr><td>Base de Cálculo ST</td><td style="text-align:right;">${formatCurrency(calc.result.baseSt)}</td></tr>
           <tr><td>ICMS-ST</td><td style="text-align:right;"><strong>${formatCurrency(calc.result.valorSt)}</strong></td></tr>
           <tr><td>Base PIS/COFINS</td><td style="text-align:right;">${formatCurrency(calc.result.basePisCofins)}</td></tr>
-          <tr><td>Total da Nota</td><td style="text-align:right;"><strong>${formatCurrency(calc.result.valorTotalNota)}</strong></td></tr>
+          <tr><td>Total da Nota (Itens)</td><td style="text-align:right;"><strong>${formatCurrency(calc.result.valorTotalNota)}</strong></td></tr>
         </table>
       `;
     }).join('<hr class="section-divider">');
@@ -344,7 +338,8 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
           .btn-print { font-family: inherit; font-size: 14px; background-color: #3B82F6; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; }
           .btn-print:hover { background-color: #2563eb; }
           .subtitle { margin-top: 20px; font-size: 14px; color: #6c757d; }
-          .items-applied { font-size: 13px; color: #495057; background-color: #e9ecef; padding: 8px; border-radius: 6px; margin-top: 10px; }
+          .items-applied { font-size: 13px; color: #495057; background-color: #e9ecef; padding: 8px 12px; border-radius: 6px; margin-top: 10px; }
+          .items-applied ul { margin: 4px 0 0; padding-left: 20px; }
           table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
           th { text-align: left; color: #3b82f6; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding: 10px 4px; }
           td { text-align: left; padding: 12px 4px; border-bottom: 1px solid #f3f4f6; color: #4b5563; }
@@ -433,74 +428,71 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
       setIvaAjustado(null);
   };
 
-  const handleEdit = (index: number) => {
-    const calculationToEdit = completedCalculations[index];
-    setEditingIndex(index);
-    form.reset(calculationToEdit.formData);
-    setStep('calculating');
+  const handleEdit = (calc: CompletedCalculation) => {
+    setEditingId(calc.id);
+    setSelectedItemIds(calc.selectedItems.map(i => i.item));
+    form.reset(calc.formData);
+    toast({ title: `Editando grupo de itens.` });
   };
 
-  const renderSetup = () => (
-    <Card className="w-full max-w-lg mx-auto shadow-lg border">
-      <CardHeader>
-        <CardTitle>Configuração do Cálculo</CardTitle>
-        <CardDescription>Quantos cálculos com IVAs diferentes você precisa fazer para esta nota fiscal?</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor="numberOfCalculations">Número de Cálculos</Label>
-          <Input 
-            id="numberOfCalculations"
-            type="number"
-            min="1"
-            value={numberOfCalculations}
-            onChange={(e) => setNumberOfCalculations(parseInt(e.target.value) || 1)}
-            className="mt-2"
-          />
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleStart} className="w-full">
-          Começar Cálculos
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </CardFooter>
-    </Card>
-  );
+  const handleDelete = (id: string) => {
+    setCompletedCalculations(prev => prev.filter(c => c.id !== id));
+    toast({ variant: 'destructive', title: 'Grupo de cálculo removido.' });
+  }
 
   const renderCalculator = () => {
-    const isEditing = editingIndex !== null;
+    const isEditing = editingId !== null;
     return (
       <Card className="w-full max-w-4xl mx-auto shadow-lg border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl font-headline">
             <Calculator className="h-6 w-6 text-primary" />
-            {isEditing ? `Editando Cálculo ${editingIndex! + 1}` : `Calculadora de ICMS-ST (Cálculo ${currentCalculationIndex + 1} de ${numberOfCalculations})`}
+            {isEditing ? `Editando Grupo de Cálculo` : `Calculadora de ICMS-ST`}
           </CardTitle>
           <CardDescription>
-            Insira os valores da nota para calcular a Substituição Tributária.
+            {prefillData?.products 
+                ? 'Selecione os itens da nota e preencha os campos para calcular a ST.' 
+                : 'Insira os valores para calcular a Substituição Tributária.'}
           </CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
-              <FormField
-                control={form.control}
-                name="items"
-                render={({ field }) => (
-                  <FormItem className="pb-4 border-b">
-                    <FormLabel className="font-semibold text-lg flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      Itens da Nota Fiscal (Opcional)
-                    </FormLabel>
-                     <p className="text-sm text-muted-foreground">Descreva quais itens da nota este cálculo de IVA se aplica. Ex: "Item 1, 2, 5" ou "Parafusos".</p>
-                    <FormControl>
-                      <Textarea placeholder="Ex: Item 1, 2, 5 ou todos os parafusos" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {prefillData?.products && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <ListChecks className="h-5 w-5 text-primary" />
+                            Selecione os Itens para este Cálculo
+                        </CardTitle>
+                        <CardDescription>
+                            Itens disponíveis para cálculo. Os já calculados não aparecerão aqui.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ScrollArea className="h-40 w-full rounded-md border p-4">
+                           {availableProducts.length > 0 ? availableProducts.map((p: NfeProductData) => (
+                               <div key={p.item} className="flex items-center space-x-2 mb-2">
+                                <Checkbox
+                                    id={`item-${p.item}`}
+                                    checked={selectedItemIds.includes(p.item)}
+                                    onCheckedChange={(checked) => {
+                                        setSelectedItemIds(prev => 
+                                            checked ? [...prev, p.item] : prev.filter(id => id !== p.item)
+                                        );
+                                    }}
+                                />
+                                <label htmlFor={`item-${p.item}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    Item {p.item}: {p.xProd} ({formatCurrency(parseFloat(p.vProd || '0'))})
+                                </label>
+                               </div>
+                           )) : (
+                               <p className="text-sm text-muted-foreground">Todos os itens da nota já foram incluídos em cálculos.</p>
+                           )}
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+              )}
                <FormField
                   control={form.control}
                   name="operationType"
@@ -511,9 +503,8 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
                         Tipo de Operação *
                       </FormLabel>
                       <FormControl>
-                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col sm:flex-row gap-4">
+                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col sm:flex-row gap-4">
                           <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="compra" id="op-compra" /></FormControl><FormLabel htmlFor="op-compra" className="font-normal cursor-pointer">Compra</FormLabel></FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="pecas" id="op-pecas" /></FormControl><FormLabel htmlFor="op-pecas" className="font-normal cursor-pointer">Peças</FormLabel></FormItem>
                           <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="transferencia" id="op-transfer" /></FormControl><FormLabel htmlFor="op-transfer" className="font-normal cursor-pointer">Transferência</FormLabel></FormItem>
                         </RadioGroup>
                       </FormControl><FormMessage />
@@ -523,17 +514,14 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
                  <FormField control={form.control} name="ncm" render={({ field }) => (<FormItem><FormLabel>NCM</FormLabel><FormControl><Input placeholder="84439933" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="fornecedor" render={({ field }) => (<FormItem><FormLabel>Fornecedor</FormLabel><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="Nome do fornecedor" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="valorMercadoria" render={({ field }) => (<FormItem><FormLabel>{operationType === 'pecas' ? 'Valor Total c/ IPI *' : 'Vlr. Mercadoria *'}</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1.000,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="aliqIcms" render={({ field }) => (<FormItem><FormLabel>Alíq. ICMS *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="12,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="mva" render={({ field }) => (<FormItem><FormLabel>IVA/MVA *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="29,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="aliqIcmsSt" render={({ field }) => (<FormItem><FormLabel>Alíq. ICMS ST *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="18,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="0,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
                 <FormField
                   control={form.control}
                   name="origem4"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col rounded-lg border p-4 pt-3">
+                    <FormItem className="flex flex-col rounded-lg border p-4 pt-3 lg:col-span-2">
                       <div className="flex flex-row items-center justify-between">
                         <FormLabel htmlFor="origem4-switch" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           Origem 4
@@ -558,13 +546,13 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
             <CardFooter className="flex gap-4">
                 {isEditing ? (
                     <>
-                        <Button type="button" variant="outline" className="w-full" onClick={() => { setEditingIndex(null); setStep('results'); }}>Cancelar</Button>
+                        <Button type="button" variant="outline" className="w-full" onClick={() => { setEditingId(null); handleNewCalculationGroup(); }}>Cancelar Edição</Button>
                         <Button type="submit" className="w-full bg-gradient-to-r from-accent to-primary text-white font-bold">Salvar Alterações</Button>
                     </>
                 ) : (
                     <Button type="submit" className="w-full bg-gradient-to-r from-accent to-primary text-white font-bold">
-                      <Calculator className="mr-2 h-4 w-4" />
-                      {currentCalculationIndex < numberOfCalculations - 1 ? `Salvar e Próximo (${currentCalculationIndex + 2}/${numberOfCalculations})` : 'Finalizar e Ver Resultados'}
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Adicionar Grupo de Cálculo
                     </Button>
                 )}
             </CardFooter>
@@ -581,7 +569,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-2xl font-bold font-headline">Resultados Consolidados</h2>
           <div className="flex gap-2 w-full sm:w-auto flex-wrap">
-            <Button variant="outline" onClick={handleNewFullCalculation} className="flex-1"><PlusCircle className="mr-2 h-4 w-4" />Novo Cálculo</Button>
+            <Button variant="outline" onClick={handleNewFullCalculation} className="flex-1"><RotateCw className="mr-2 h-4 w-4" />Novo Cálculo</Button>
             <Button onClick={handlePrint} className="flex-1"><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
             <Button asChild variant="secondary" className="flex-1">
               <a href="https://www4.fazenda.sp.gov.br/DareICMS/DareAvulso" target="_blank" rel="noopener noreferrer"><FileText className="mr-2 h-4 w-4" />Gerar DARE</a>
@@ -594,13 +582,19 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         </Card>
         <div className="space-y-4">
           {completedCalculations.map((calc, index) => (
-             <Card key={index} className="border-border/50">
+             <Card key={calc.id} className="border-border/50">
                 <CardHeader className="flex flex-row justify-between items-start">
                     <div>
-                        <CardTitle>Cálculo {index + 1}</CardTitle>
-                        <CardDescription>Para os itens: <span className="font-semibold text-foreground">{calc.formData.items || 'Não especificado'}</span></CardDescription>
+                        <CardTitle>Grupo de Cálculo {index + 1}</CardTitle>
+                        <CardDescription>
+                            <Badge variant="secondary" className="mr-2">{calc.selectedItems.length} {calc.selectedItems.length > 1 ? 'itens' : 'item'}</Badge>
+                            {calc.selectedItems.map(i => i.xProd).join(', ').substring(0, 100)}...
+                        </CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(index)}><Pencil className="mr-2 h-4 w-4" /> Editar</Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(calc)}><Pencil className="mr-2 h-4 w-4" /> Editar</Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDelete(calc.id)}><Trash2 className="mr-2 h-4 w-4" /> Excluir</Button>
+                    </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <ResultCard title="Base de Cálculo ST" value={calc.result.baseSt} />
@@ -611,26 +605,47 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
              </Card>
           ))}
         </div>
+        {availableProducts.length > 0 && (
+            <div className="text-center p-4">
+                 <Button onClick={() => setStep('calculating')}>
+                    <PlusCircle className="mr-2" />
+                    Adicionar Novo Grupo de Cálculo
+                </Button>
+            </div>
+        )}
       </section>
     )
   };
 
   const renderContent = () => {
-    switch(step) {
-      case 'setup':
-        return renderSetup();
-      case 'calculating':
-        return renderCalculator();
-      case 'results':
+    // If we have completed calculations, always show results.
+    // The user can choose to add more from the results screen.
+    if (completedCalculations.length > 0 && availableProducts.length === 0 && step !== 'calculating') {
         return renderResults();
-      default:
-        return renderSetup();
     }
+    
+    if (step === 'calculating') {
+        return renderCalculator();
+    }
+    
+    // Default to results if there are any, otherwise show calculator
+    return completedCalculations.length > 0 ? renderResults() : renderCalculator();
   }
+  
+  const allItemsCalculated = prefillData?.products && availableProducts.length === 0;
 
   return (
     <div className="space-y-8">
       {renderContent()}
+
+       {completedCalculations.length > 0 && (
+            <div className="text-center p-4">
+                <Button size="lg" onClick={() => setStep('results')}>
+                    <PackageCheck className="mr-2" />
+                    Finalizar e Ver Relatório Consolidado
+                </Button>
+            </div>
+        )}
 
       <Card className="w-full max-w-4xl mx-auto shadow-lg border">
         <CardHeader>
@@ -655,5 +670,3 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
     </div>
   );
 }
-
-    
