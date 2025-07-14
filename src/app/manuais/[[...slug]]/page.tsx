@@ -16,8 +16,7 @@ export default function ManuaisPage({ params }: { params: { slug?: string[] } })
     const [activeNotebookId, setActiveNotebookId] = useState<string | null>(null);
     const router = useRouter();
 
-    // Safely access slug from params
-    const slug = params.slug;
+    const { slug } = params;
 
     useEffect(() => {
         try {
