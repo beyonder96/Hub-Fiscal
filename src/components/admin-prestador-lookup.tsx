@@ -9,7 +9,7 @@ import { prestadorSchema } from "@/lib/definitions";
 import { initialPrestadores } from "@/lib/prestador-data";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -308,14 +308,24 @@ export function PrestadorLookup() {
                     </div>
                   </div>
               </div>
-              {selectedPrestador.autenticidadeUrl && selectedPrestador.autenticidadeUrl !== '-' && (
-                 <Button asChild variant="outline" className="w-full">
-                  <a href={selectedPrestador.autenticidadeUrl} target="_blank" rel="noopener noreferrer">
-                    <LinkIcon className="mr-2 h-4 w-4"/>
-                    Verificar Autenticidade
-                  </a>
-                 </Button>
-              )}
+              <div className="flex flex-col sm:flex-row gap-2">
+                {selectedPrestador.autenticidadeUrl && selectedPrestador.autenticidadeUrl !== '-' && (
+                   <Button asChild variant="outline" className="w-full">
+                    <a href={selectedPrestador.autenticidadeUrl} target="_blank" rel="noopener noreferrer">
+                      <LinkIcon className="mr-2 h-4 w-4"/>
+                      Verificar Autenticidade
+                    </a>
+                   </Button>
+                )}
+                {selectedPrestador.nfts === 'SIM' && (
+                  <Button asChild className="w-full bg-gradient-to-r from-accent to-primary text-white">
+                    <a href="https://nfe.prefeitura.sp.gov.br/login.aspx" target="_blank" rel="noopener noreferrer">
+                      <FileCheck2 className="mr-2 h-4 w-4" />
+                      Emitir NFTS
+                    </a>
+                  </Button>
+                )}
+              </div>
                {selectedPrestador.lastModifiedAt && (
                 <div className="mt-4 text-xs text-muted-foreground text-center border-t pt-4">
                   Última alteração por <span className="font-semibold">{selectedPrestador.lastModifiedBy || 'N/A'}</span> em {format(new Date(selectedPrestador.lastModifiedAt), "dd/MM/yyyy 'às' HH:mm")}
