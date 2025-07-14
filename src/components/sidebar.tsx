@@ -7,7 +7,7 @@ import { SidebarContent } from "./sidebar-content";
 
 export function Sidebar() {
   return (
-    <aside className="hidden md:flex flex-col w-64 border-r bg-background/60 backdrop-blur-xl glass-effect">
+    <aside className="hidden md:flex flex-col w-64 border-r bg-sidebar backdrop-blur-xl glass-effect">
       <div className="flex items-center gap-2 p-4 border-b h-16">
         <div className="p-2 bg-gradient-to-br from-accent to-primary rounded-lg">
           <BookMarked className="h-6 w-6 text-white" />
