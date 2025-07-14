@@ -16,6 +16,9 @@ export default function ManuaisPage({ params }: { params: { slug?: string[] } })
     const [activeNotebookId, setActiveNotebookId] = useState<string | null>(null);
     const router = useRouter();
 
+    // Safely access slug from params
+    const slug = params.slug;
+
     useEffect(() => {
         try {
             const stored = localStorage.getItem("manualsNotebooks");
@@ -25,8 +28,8 @@ export default function ManuaisPage({ params }: { params: { slug?: string[] } })
 
                 let pageIdToFind: string | undefined;
 
-                if (params.slug?.length === 2 && params.slug[0] === 'page') {
-                    pageIdToFind = params.slug[1];
+                if (slug?.length === 2 && slug[0] === 'page') {
+                    pageIdToFind = slug[1];
                 } else if (parsed.length > 0) {
                     const firstNotebook = parsed[0];
                     if (firstNotebook.pages.length > 0) {
@@ -50,7 +53,7 @@ export default function ManuaisPage({ params }: { params: { slug?: string[] } })
                     if(foundPage && foundNotebookId) {
                         setActivePage(foundPage);
                         setActiveNotebookId(foundNotebookId);
-                         if (!params.slug || params.slug.length === 0) {
+                         if (!slug || slug.length === 0) {
                              router.replace(`/manuais/page/${foundPage.id}`, { scroll: false });
                         }
                     }
@@ -59,7 +62,7 @@ export default function ManuaisPage({ params }: { params: { slug?: string[] } })
         } catch (error) {
             console.error("Failed to load manuals from localStorage", error);
         }
-    }, [params.slug]);
+    }, [slug, router]);
 
     const handleSelectPage = (notebookId: string, pageId: string) => {
         router.push(`/manuais/page/${pageId}`);
