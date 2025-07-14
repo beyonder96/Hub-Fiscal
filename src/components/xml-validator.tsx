@@ -124,7 +124,6 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     const tolerance = 0.02;
 
     const firstProductCfop = data.products[0]?.cfop;
-    const isConsertoOperation = firstProductCfop === '5.915' || firstProductCfop === '6.915';
     
     // Handle Conserto type first
     if (inputType === 'Conserto') {
@@ -132,6 +131,7 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
         const actualTotalVIpi = parseFloat(data.total.vIPI || '0');
         const actualTotalVICMSST = parseFloat(data.total.vBCST || '0');
 
+        const isConsertoOperation = firstProductCfop === '5.915' || firstProductCfop === '6.915';
         if (!isConsertoOperation) {
             const errorMsg = `Tipo de entrada 'Conserto' selecionado, mas o CFOP (${firstProductCfop}) não é de remessa para conserto.`;
             validations.vICMS = { check: 'divergent', message: errorMsg };
@@ -227,14 +227,26 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
             validations.vICMSST = { check: 'divergent', message: `ICMS-ST deve ser zero para operações internas no ES, mas o total vICMSST encontrado foi R$ ${actualTotalVICMSST.toFixed(2)}.` };
         }
     } else {
-        const sumOfProductVBCST = data.products.reduce((acc, p) => acc + parseFloat(p.icmsSt.vBCST || '0'), 0);
+        const expectedVBCST = data.products.reduce((acc, p) => {
+            const vProd = parseFloat(p.vProd || '0');
+            const vFrete = parseFloat(p.vFrete || '0');
+            const vIpi = parseFloat(p.ipi.vIPI || '0');
+            const pMVAST = parseFloat(p.icmsSt.pMVAST || '0') / 100;
+            const pRedBCST = parseFloat(p.icmsSt.pRedBCST || '0') / 100;
+
+            const baseStSemReducao = (vProd + vFrete + vIpi) * (1 + pMVAST);
+            const baseStComReducao = baseStSemReducao * (1 - pRedBCST);
+
+            return acc + baseStComReducao;
+        }, 0);
+        
         const sumOfProductVICMSST = data.products.reduce((acc, p) => acc + parseFloat(p.icmsSt.vICMSST || '0'), 0);
 
         // vBCST validation
-        if (Math.abs(sumOfProductVBCST - actualTotalVBCST) < tolerance) {
+        if (Math.abs(expectedVBCST - actualTotalVBCST) < tolerance) {
             validations.vBCST = { check: 'valid', message: `Base de Cálculo ST (R$ ${actualTotalVBCST.toFixed(2)}) validada.` };
         } else {
-            validations.vBCST = { check: 'divergent', message: `Soma da Base de Cálculo ST dos produtos (R$ ${sumOfProductVBCST.toFixed(2)}) diverge do total (R$ ${actualTotalVBCST.toFixed(2)}).` };
+            validations.vBCST = { check: 'divergent', message: `Base de Cálculo ST divergente. Esperado: R$ ${expectedVBCST.toFixed(2)}, Encontrado: R$ ${actualTotalVBCST.toFixed(2)}.` };
         }
         
         // vICMSST validation
