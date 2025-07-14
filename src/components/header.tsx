@@ -20,7 +20,7 @@ export function Header() {
                         <span className="sr-only">Toggle Menu</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0 pt-8 w-64">
+                <SheetContent side="left" className="p-0 pt-8 w-64 bg-background/60 backdrop-blur-lg glass-effect">
                     <SheetHeader className="sr-only">
                       <SheetTitle>Menu Principal</SheetTitle>
                       <SheetDescription>Navegue pelas funcionalidades do sistema.</SheetDescription>

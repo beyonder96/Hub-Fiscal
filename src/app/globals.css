@@ -14,7 +14,6 @@
     --popover-bg: 0 0% 100% / 0.6;
     --secondary-bg: 210 40% 96.1% / 0.4;
     --muted-bg: 210 40% 96.1% / 0.5;
-    --sidebar-background: 0 0% 100% / 0.1;
 
     --card: var(--card-bg);
     --card-foreground: 224 71.4% 4.1%;
@@ -53,7 +52,6 @@
     --popover-bg: 210 20% 96% / 0.1;
     --secondary-bg: 210 20% 90% / 0.05;
     --muted-bg: 210 20% 90% / 0.1;
-    --sidebar-background: 222.2 84% 4.9% / 0.1;
 
     --card: var(--card-bg);
     --card-foreground: 210 40% 98%;
