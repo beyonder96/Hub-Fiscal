@@ -31,6 +31,8 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
   const emit = xmlDoc.querySelector('emit');
   const dest = xmlDoc.querySelector('dest');
   const icmsTot = xmlDoc.querySelector('ICMSTot');
+  const emitEnder = emit?.querySelector('enderEmit');
+  const destEnder = dest?.querySelector('enderDest');
 
   const rawNatOp = getTagValue(ide, 'natOp') || 'N/A';
   let natOp = rawNatOp;
@@ -73,7 +75,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
         vBCST: getTagValue(icms, 'vBCST'),
         pMVAST: getTagValue(icms, 'pMVAST'),
         pICMSST: getTagValue(icms, 'pICMSST'),
-        vICMSST: getTagValue(icms, 'vICMSST') || getTagValue(icms, 'vST'),
+        vICMSST: getTagValue(icms, 'vST') || getTagValue(icms, 'vICMSST'),
         pRedBCST: getTagValue(icms, 'pRedBCST'),
       }
     };
@@ -86,11 +88,11 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
     natOp,
     emitCnpj: getTagValue(emit, 'CNPJ'),
     emitRazaoSocial: getTagValue(emit, 'xNome'),
-    emitUf: getTagValue(emit, 'UF'),
+    emitUf: getTagValue(emitEnder, 'UF'),
     emitCrt: getTagValue(emit, 'CRT'),
     destCnpj: getTagValue(dest, 'CNPJ'),
     destRazaoSocial: getTagValue(dest, 'xNome'),
-    destUf: getTagValue(dest, 'UF'),
+    destUf: getTagValue(destEnder, 'UF'),
     nNf: getTagValue(ide, 'nNF'),
     dhEmi: getTagValue(ide, 'dhEmi'),
     vNF: getTagValue(icmsTot, 'vNF'),
@@ -615,6 +617,7 @@ export function XmlValidator() {
                                       <CardContent className="p-3 text-sm space-y-1">
                                           <p className="truncate font-semibold">{result.nfeData?.emitRazaoSocial || "N/A"}</p>
                                           <p className="text-muted-foreground">CNPJ: {result.nfeData?.emitCnpj || "N/A"}</p>
+                                          <p className="text-muted-foreground">UF: {result.nfeData?.emitUf || "N/A"}</p>
                                       </CardContent>
                                   </Card>
                                   <Card>
@@ -622,6 +625,7 @@ export function XmlValidator() {
                                       <CardContent className="p-3 text-sm space-y-1">
                                           <p className="truncate font-semibold">{result.nfeData?.destRazaoSocial || "N/A"}</p>
                                           <p className="text-muted-foreground">CNPJ: {result.nfeData?.destCnpj || "N/A"}</p>
+                                          <p className="text-muted-foreground">UF: {result.nfeData?.destUf || "N/A"}</p>
                                       </CardContent>
                                   </Card>
                                   <div>
