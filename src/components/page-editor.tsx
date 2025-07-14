@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import type { ManualPage } from "@/lib/definitions";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Save, Trash2, Clock, Paperclip, Image, Download } from "lucide-react";
+import { Save, Trash2, Clock, Paperclip, Image, Download, Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Heading3, Undo, Redo } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,12 +21,26 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Separator } from "./ui/separator";
 
 interface PageEditorProps {
   page: ManualPage;
   onSave: (pageId: string, title: string, content: string) => void;
   onDelete: (pageId: string) => void;
 }
+
+const EditorToolbarButton = ({ onClick, children, tip }: { onClick: (e: React.MouseEvent) => void, children: React.ReactNode, tip: string }) => (
+    <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onMouseDown={onClick}
+        title={tip}
+        className="h-8 w-8"
+    >
+        {children}
+    </Button>
+);
 
 // Function to insert HTML at the cursor's position in a contentEditable div
 const insertHtmlAtCursor = (html: string) => {
@@ -121,17 +135,27 @@ export function PageEditor({ page, onSave, onDelete }: PageEditorProps) {
 
   const lastUpdated = `Última atualização em ${format(new Date(page.updatedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`;
 
+  const execCmd = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    editorRef.current?.focus();
+  };
+  
+  const handleEditorClick = (e: React.MouseEvent<HTMLButtonElement>, command: string, value?: string) => {
+      e.preventDefault(); // Prevent editor from losing focus
+      execCmd(command, value);
+  };
+
   return (
-    <div className="flex-1 flex flex-col h-full">
-      <header className="flex-shrink-0 p-3 border-b flex flex-wrap justify-between items-center gap-4">
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <header className="flex-shrink-0 p-3 border-b flex flex-wrap justify-between items-center gap-2">
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Título da Página"
           className="text-lg font-bold border-none focus-visible:ring-0 shadow-none flex-grow min-w-[200px]"
         />
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 flex-wrap justify-end flex-grow">
+          <p className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground mr-auto">
             <Clock className="h-3 w-3" />
             {lastUpdated}
           </p>
@@ -141,7 +165,7 @@ export function PageEditor({ page, onSave, onDelete }: PageEditorProps) {
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="icon">
+              <Button variant="destructive" size="icon" className="h-9 w-9">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
@@ -166,20 +190,38 @@ export function PageEditor({ page, onSave, onDelete }: PageEditorProps) {
           </Button>
         </div>
       </header>
-      <div className="flex-1 overflow-y-auto p-4"
-          ref={editorRef}
-          contentEditable
-          onPaste={handlePaste}
-          onInput={(e) => setContent(e.currentTarget.innerHTML)}
-          suppressContentEditableWarning={true}
-          dangerouslySetInnerHTML={{ __html: content }}
-          style={{ minHeight: '200px' }}
-          className={cn(
-            "prose dark:prose-invert max-w-none focus:outline-none",
-            "text-base ring-offset-background placeholder:text-muted-foreground",
-            "disabled:cursor-not-allowed disabled:opacity-50"
-          )}
-      >
+
+      <div className="flex-shrink-0 p-1.5 border-b flex flex-wrap items-center gap-1">
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'undo')} tip="Desfazer (Ctrl+Z)"><Undo /></EditorToolbarButton>
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'redo')} tip="Refazer (Ctrl+Y)"><Redo /></EditorToolbarButton>
+          <Separator orientation="vertical" className="h-6 mx-1" />
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'formatBlock', 'h1')} tip="Título 1"><Heading1 /></EditorToolbarButton>
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'formatBlock', 'h2')} tip="Título 2"><Heading2 /></EditorToolbarButton>
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'formatBlock', 'h3')} tip="Título 3"><Heading3 /></EditorToolbarButton>
+          <Separator orientation="vertical" className="h-6 mx-1" />
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'bold')} tip="Negrito (Ctrl+B)"><Bold /></EditorToolbarButton>
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'italic')} tip="Itálico (Ctrl+I)"><Italic /></EditorToolbarButton>
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'underline')} tip="Sublinhado (Ctrl+U)"><Underline /></EditorToolbarButton>
+          <Separator orientation="vertical" className="h-6 mx-1" />
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'insertUnorderedList')} tip="Lista com Marcadores"><List /></EditorToolbarButton>
+          <EditorToolbarButton onClick={(e) => handleEditorClick(e, 'insertOrderedList')} tip="Lista Numerada"><ListOrdered /></EditorToolbarButton>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div
+            ref={editorRef}
+            contentEditable
+            onPaste={handlePaste}
+            onInput={(e) => setContent(e.currentTarget.innerHTML)}
+            suppressContentEditableWarning={true}
+            dangerouslySetInnerHTML={{ __html: content }}
+            className={cn(
+              "prose dark:prose-invert max-w-none focus:outline-none p-4 w-full h-full",
+              "text-base ring-offset-background placeholder:text-muted-foreground",
+              "disabled:cursor-not-allowed disabled:opacity-50"
+            )}
+        >
+        </div>
       </div>
     </div>
   );
