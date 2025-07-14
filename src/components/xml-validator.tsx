@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -104,7 +105,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
     total: {
       vBC: getTagValue(icmsTot, 'vBC'),
       vICMS: getTagValue(icmsTot, 'vICMS'),
-      vBCST: getTagValue(icmsTot, 'vICMSST') || getTagValue(icmsTot, 'vST'),
+      vBCST: getTagValue(icmsTot, 'vBCST'),
       vICMSST: getTagValue(icmsTot, 'vICMSST') || getTagValue(icmsTot, 'vST'),
       vIPI: getTagValue(icmsTot, 'vIPI'),
     },
@@ -129,7 +130,7 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     if (inputType === 'Conserto') {
         const actualTotalVIcms = parseFloat(data.total.vICMS || '0');
         const actualTotalVIpi = parseFloat(data.total.vIPI || '0');
-        const actualTotalVICMSST = parseFloat(data.total.vBCST || '0');
+        const actualTotalVICMSST = parseFloat(data.total.vICMSST || '0');
 
         const isConsertoOperation = firstProductCfop === '5.915' || firstProductCfop === '6.915';
         if (!isConsertoOperation) {
