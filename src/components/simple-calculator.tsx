@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Calculator } from 'lucide-react';
@@ -63,33 +63,34 @@ export function SimpleCalculator() {
   ];
 
   return (
-    <div className="flex justify-center items-center h-full">
-      <Card className="w-full max-w-sm shadow-2xl border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline">
-            <Calculator className="h-6 w-6 text-primary" />
-            Calculadora
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-muted rounded-lg p-4 text-right mb-4 min-h-[100px] flex flex-col justify-end">
-            <div className="text-muted-foreground break-all text-lg">{input || '0'}</div>
-            <div className="text-4xl font-bold break-all">{result}</div>
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            {buttons.map((btn) => (
-              <Button
-                key={btn.label}
-                onClick={btn.handler}
-                variant="outline"
-                className={cn('h-16 text-2xl font-bold', btn.className)}
-              >
-                {btn.label}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="w-full max-w-sm shadow-2xl border-primary/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-headline">
+          <Calculator className="h-6 w-6 text-primary" />
+          Calculadora
+        </CardTitle>
+         <CardDescription>
+            Faça cálculos rápidos sem sair da página.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-4">
+        <div className="bg-muted rounded-lg p-4 text-right mb-4 min-h-[100px] flex flex-col justify-end">
+          <div className="text-muted-foreground break-all text-lg">{input || '0'}</div>
+          <div className="text-4xl font-bold break-all">{result}</div>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {buttons.map((btn) => (
+            <Button
+              key={btn.label}
+              onClick={btn.handler}
+              variant="outline"
+              className={cn('h-16 text-2xl font-bold', btn.className)}
+            >
+              {btn.label}
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

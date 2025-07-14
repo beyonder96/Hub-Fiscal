@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import { BookMarked, Bot, FileCode, FileSpreadsheet, Search, Shield, Users, BookOpen, GitCommit, Calculator } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { SimpleCalculator } from './simple-calculator';
 
 const toolLinks = [
   { href: "/consulta-aliquota", label: "Consulta Alíquota", icon: Search },
@@ -13,7 +15,6 @@ const toolLinks = [
   { href: "/calculo-icms-st", label: "Cálculo ICMS-ST", icon: FileSpreadsheet },
   { href: "/pesquisa-tes", label: "Pesquisa de TES", icon: Bot },
   { href: "/chamados", label: "Consulta Prestador", icon: Users },
-  { href: "/calculadora", label: "Calculadora", icon: Calculator },
   { href: "/manuais", label: "Manuais", icon: BookOpen },
 ];
 
@@ -51,6 +52,18 @@ export function Header() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
+           <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Calculator className="h-4 w-4 mr-0 md:mr-2" />
+                  <span className="hidden md:inline">Calculadora</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-sm">
+                <SimpleCalculator />
+              </DialogContent>
+           </Dialog>
+
            <Button asChild variant={pathname === "/updates" ? "secondary" : "ghost"} size="sm">
               <Link href="/updates">
                 <GitCommit className="h-4 w-4 mr-0 md:mr-2" />

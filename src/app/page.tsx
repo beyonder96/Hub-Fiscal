@@ -45,14 +45,6 @@ const features = [
     bgColor: "bg-yellow-500/10",
     textColor: "text-yellow-300"
   },
-  {
-    icon: <Calculator className="h-8 w-8 text-primary" />,
-    title: "Calculadora",
-    description: "Realize cálculos rápidos sem sair do sistema.",
-    href: "/calculadora",
-    bgColor: "bg-red-500/10",
-    textColor: "text-red-300"
-  },
 ];
 
 export default function Home() {
