@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SimpleCalculator } from './simple-calculator';
 import { Calculator, PanelLeft } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
-import { Sidebar } from "./sidebar";
+import { SidebarContent } from "./sidebar-content";
 
 export function Header() {
   return (
@@ -25,7 +25,7 @@ export function Header() {
                       <SheetTitle>Menu Principal</SheetTitle>
                       <SheetDescription>Navegue pelas funcionalidades do sistema.</SheetDescription>
                     </SheetHeader>
-                    <Sidebar />
+                    <SidebarContent />
                 </SheetContent>
             </Sheet>
         </div>
