@@ -117,25 +117,21 @@ export function PrestadorLookup() {
   });
 
   const findManualPageForPrestador = (prestadorName: string): string | null => {
-    const normalizedName = prestadorName.toUpperCase();
-  
-    for (const notebook of manuals) {
-      for (const page of notebook.pages) {
-        const pageTitle = page.title.toUpperCase();
-        
-        if (pageTitle === "VIVO" && normalizedName.includes("VIVO")) {
-          return page.id;
-        }
-        if (pageTitle === "ENEL SP" && normalizedName.includes("ENEL")) {
-          return page.id;
-        }
-        // Fallback to exact match just in case
-        if (pageTitle === normalizedName) {
-            return page.id;
-        }
+      const pName = prestadorName.toUpperCase();
+      const keywords = ["VIVO", "ENEL"];
+
+      for (const notebook of manuals) {
+          for (const page of notebook.pages) {
+              const pageTitle = page.title.toUpperCase();
+              for (const keyword of keywords) {
+                  // Check if both prestador name and page title contain the keyword
+                  if (pName.includes(keyword) && pageTitle.includes(keyword)) {
+                      return page.id;
+                  }
+              }
+          }
       }
-    }
-    return null;
+      return null;
   };
 
   const handleSearch = (e: React.FormEvent) => {
