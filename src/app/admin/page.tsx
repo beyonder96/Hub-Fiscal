@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Header } from "@/components/header";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { AdminLogin } from "@/components/admin-login";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,27 +34,19 @@ export default function AdminPage() {
 
   if (isCheckingAuth) {
     return (
-        <>
-            <Header />
-            <main className="flex-1 container mx-auto flex items-center justify-center py-24">
-              <div className="w-full max-w-md">
-                <Skeleton className="h-[340px] w-full" />
-              </div>
-            </main>
-        </>
+      <div className="w-full max-w-md mx-auto">
+          <Skeleton className="h-[340px] w-full" />
+      </div>
     )
   }
 
   return (
     <>
-      <Header />
-      <main className="flex-1">
         {isAuthenticated ? (
           <AdminDashboard />
         ) : (
           <AdminLogin onLoginSuccess={handleLoginSuccess} />
         )}
-      </main>
     </>
   );
 }

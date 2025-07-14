@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Header } from "@/components/header";
 import { Placeholder } from "@/components/placeholder";
 import { TaxForm } from "@/components/tax-form";
 import { TaxResultCard } from "@/components/tax-result-card";
@@ -65,27 +64,22 @@ export default function ConsultaAliquotaPage() {
   };
   
   return (
-    <>
-      <Header />
-      <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          <div>
-            <TaxForm
-              rates={allTaxRates}
-              onSearch={handleSearch}
-              isSubmitting={isSubmitting}
-              onClear={handleClear}
-            />
-          </div>
-          <div className="space-y-6">
-            {result || notFound ? (
-              <TaxResultCard result={result} notFound={notFound} />
-            ) : (
-              <Placeholder />
-            )}
-          </div>
-        </div>
-      </main>
-    </>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <div>
+        <TaxForm
+          rates={allTaxRates}
+          onSearch={handleSearch}
+          isSubmitting={isSubmitting}
+          onClear={handleClear}
+        />
+      </div>
+      <div className="space-y-6">
+        {result || notFound ? (
+          <TaxResultCard result={result} notFound={notFound} />
+        ) : (
+          <Placeholder />
+        )}
+      </div>
+    </div>
   );
 }

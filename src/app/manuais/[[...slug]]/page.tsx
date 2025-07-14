@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from "react";
 import type { Notebook, ManualPage } from "@/lib/definitions";
-import { Header } from "@/components/header";
 import { NotebookSidebar } from "@/components/notebook-sidebar";
 import { PageViewer } from "@/components/page-viewer";
 import { Card } from "@/components/ui/card";
@@ -68,34 +67,29 @@ export default function ManuaisPage() {
     };
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-1 container mx-auto px-4 py-8">
-                <Card className="h-[calc(100vh-150px)] flex flex-col md:flex-row overflow-hidden">
-                    <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r">
-                        <NotebookSidebar
-                            notebooks={notebooks}
-                            activePageId={activePage?.id || null}
-                            activeNotebookId={activeNotebookId}
-                            onSelectPage={handleSelectPage}
-                            isReadOnly={true}
-                        />
-                    </aside>
-                    <main className="flex-1 flex flex-col">
-                        {activePage ? (
-                            <PageViewer page={activePage} />
-                        ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-muted/50">
-                                <BookCopy className="h-16 w-16 text-muted-foreground mb-4" />
-                                <h2 className="text-xl font-semibold">Manuais do Sistema</h2>
-                                <p className="text-muted-foreground mt-2 max-w-sm">
-                                    Selecione uma página na barra lateral para começar a ler.
-                                </p>
-                            </div>
-                        )}
-                    </main>
-                </Card>
+        <Card className="h-[calc(100vh-120px)] flex flex-col md:flex-row overflow-hidden">
+            <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r">
+                <NotebookSidebar
+                    notebooks={notebooks}
+                    activePageId={activePage?.id || null}
+                    activeNotebookId={activeNotebookId}
+                    onSelectPage={handleSelectPage}
+                    isReadOnly={true}
+                />
+            </aside>
+            <main className="flex-1 flex flex-col">
+                {activePage ? (
+                    <PageViewer page={activePage} />
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-muted/50">
+                        <BookCopy className="h-16 w-16 text-muted-foreground mb-4" />
+                        <h2 className="text-xl font-semibold">Manuais do Sistema</h2>
+                        <p className="text-muted-foreground mt-2 max-w-sm">
+                            Selecione uma página na barra lateral para começar a ler.
+                        </p>
+                    </div>
+                )}
             </main>
-        </div>
+        </Card>
     );
 }
