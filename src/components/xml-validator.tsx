@@ -7,6 +7,8 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { ValidationResult, ValidationHistoryItem, NfeData, NfeInputType, ValidationMessage, NfeProductData, CalculationValidation, ValidationState } from "@/lib/definitions";
 import { NfeInputTypes } from "@/lib/definitions";
+import { useRouter } from "next/navigation";
+import { initialTaxRates } from "@/lib/tax-data";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { FileCode, Upload, CheckCircle2, XCircle, AlertTriangle, FileDown, Trash2, History, Info } from "lucide-react";
+import { FileCode, Upload, CheckCircle2, XCircle, AlertTriangle, FileDown, Trash2, History, Info, Calculator } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 const MAX_HISTORY_ITEMS = 15;
@@ -311,6 +313,7 @@ export function XmlValidator() {
   const [history, setHistory] = useState<ValidationHistoryItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     try {
@@ -442,6 +445,33 @@ export function XmlValidator() {
     }));
   };
 
+  const handleCalculateSt = (result: ValidationResult) => {
+    if (!result.nfeData) return;
+    const { nfeData } = result;
+    
+    const valorMercadoria = nfeData.products.reduce((acc, p) => acc + parseFloat(p.vProd || '0'), 0);
+    const valorFrete = parseFloat(nfeData.vFrete || '0');
+    const valorIpi = parseFloat(nfeData.total.vIPI || '0');
+    const aliqIcms = parseFloat(nfeData.products[0]?.icms.pICMS || '0');
+    const origem4 = nfeData.products.some(p => p.cst?.startsWith('4'));
+    const operationType = nfeData.products[0]?.cfop === '6152' ? 'transferencia' : 'compra';
+    
+    const prefillData = {
+        valorMercadoria,
+        valorFrete,
+        valorIpi,
+        aliqIcms,
+        origem4,
+        operationType,
+        fornecedor: nfeData.emitRazaoSocial,
+        ncm: nfeData.products[0]?.ncm,
+    };
+
+    const params = new URLSearchParams();
+    params.set('stData', JSON.stringify(prefillData));
+    router.push(`/calculo-icms-st?${params.toString()}`);
+  }
+
   const exportToCsv = () => {
     if (results.length === 0) {
       toast({ title: "Nenhum dado para exportar." });
@@ -501,6 +531,18 @@ export function XmlValidator() {
     return !isNaN(num) ? `${num.toFixed(2)}%` : 'N/A';
   }
 
+  const checkStCalculationNeeded = (nfeData: NfeData | null): boolean => {
+    if (!nfeData) return false;
+    const isDestSP = nfeData.destUf === 'SP';
+    const isEmitNotSP = nfeData.emitUf !== 'SP';
+    if (!isDestSP || !isEmitNotSP) return false;
+
+    const protocolData = initialTaxRates.find(r => r.destinationStateCode === nfeData.destUf && r.interstateRate.hasOwnProperty(nfeData.emitUf as 'ES' | 'SP'));
+    const hasProtocol = protocolData?.protocol ?? true; // Assume protocol if not found to be safe
+
+    return !hasProtocol;
+  };
+
   return (
     <Card className="w-full max-w-6xl mx-auto shadow-lg border-none">
       <CardHeader>
@@ -544,6 +586,8 @@ export function XmlValidator() {
                   {results.map((result) => {
                     const hasDivergence = Object.values(result.calculationValidations).some(v => v.check === 'divergent');
                     const overallStatus = result.status === 'error' ? 'Erro' : hasDivergence ? 'Divergente' : 'Validada';
+                    const showStButton = checkStCalculationNeeded(result.nfeData);
+
                     return (
                       <CarouselItem key={result.id}>
                         <div className="h-full p-1">
@@ -592,6 +636,13 @@ export function XmlValidator() {
                                     </RadioGroup>
                                   </div>
                               </div>
+                              
+                              {showStButton && (
+                                <Button className="w-full" onClick={() => handleCalculateSt(result)}>
+                                    <Calculator className="mr-2" />
+                                    Calcular ICMS-ST
+                                </Button>
+                              )}
 
                               <Tabs defaultValue="fiscal">
                                   <TabsList className="grid w-full grid-cols-2">
@@ -735,5 +786,3 @@ export function XmlValidator() {
     </Card>
   );
 }
-
-    
