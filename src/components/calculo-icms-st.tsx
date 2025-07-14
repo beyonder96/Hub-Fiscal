@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileText, Briefcase, Building, Search, Clipboard, ArrowRight, PlusCircle, Pencil, Printer, PackageCheck, ListChecks } from "lucide-react";
+import { Calculator, RotateCw, Info, Percent, DollarSign, Wand2, FileText, Briefcase, Building, Search, Clipboard, ArrowRight, PlusCircle, Pencil, Printer, PackageCheck, ListChecks, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
@@ -142,7 +142,6 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
       operationType: "compra",
       ncm: "",
       fornecedor: "",
-      aliqIpi: "",
       aliqIcms: "",
       mva: "",
       aliqIcmsSt: "",
@@ -185,7 +184,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         operationType: prefillData.operationType,
         fornecedor: prefillData.fornecedor,
         ncm: '',
-        origem4: false,
+        origem4: prefillData.origem4,
         aliqIcms: prefillData.aliqIcms?.toString().replace('.', ',') ?? '',
     });
     toast({ title: "Pronto para o próximo grupo de itens." });
