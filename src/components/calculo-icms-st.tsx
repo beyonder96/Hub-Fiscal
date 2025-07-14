@@ -153,7 +153,8 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
   });
   
   useEffect(() => {
-    if (prefillData) {
+    // This effect now only sets up the form for the first calculation
+    if (prefillData && step === 'calculating' && currentCalculationIndex === 0 && completedCalculations.length === 0) {
       form.reset({
         ...form.getValues(),
         ...prefillData,
@@ -162,10 +163,8 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         valorIpi: prefillData.valorIpi?.toString().replace('.', ',') ?? '',
         aliqIcms: prefillData.aliqIcms?.toString().replace('.', ',') ?? '',
       });
-      setStep('calculating');
-      setNumberOfCalculations(1);
     }
-  }, [prefillData, form]);
+  }, [prefillData, step, currentCalculationIndex, completedCalculations, form]);
 
   const operationType = form.watch("operationType");
   const parseLocaleString = (value: string) => parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
@@ -656,3 +655,5 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
     </div>
   );
 }
+
+    
