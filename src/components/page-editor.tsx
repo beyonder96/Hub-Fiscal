@@ -96,21 +96,47 @@ export function PageEditor({ page, onSave, onDelete }: PageEditorProps) {
   };
 
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
-      const items = event.clipboardData.items;
-      for (const item of items) {
-          if (item.type.indexOf('image') !== -1) {
-              const file = item.getAsFile();
-              if (!file) continue;
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                  const src = e.target?.result as string;
-                  const imgHtml = `<img src="${src}" style="max-width: 100%; height: auto; border-radius: 8px;" />`;
-                  insertHtmlAtCursor(imgHtml);
-              };
-              reader.readAsDataURL(file);
-              event.preventDefault();
-          }
-      }
+    const clipboardData = event.clipboardData;
+    const items = clipboardData.items;
+
+    let hasHtml = false;
+    for (const item of items) {
+        if (item.type === 'text/html') {
+            hasHtml = true;
+            break;
+        }
+    }
+
+    // If HTML is present, let the browser handle it.
+    // This correctly pastes rich content from sources like OneNote.
+    if (hasHtml) {
+        return;
+    }
+    
+    // If no HTML, but an image is present, handle the image paste.
+    // This prevents pasting a "screenshot" of the content when HTML is available.
+    for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+            const file = item.getAsFile();
+            if (!file) continue;
+            
+            event.preventDefault(); // Stop default paste behavior
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const src = e.target?.result as string;
+                const imgHtml = `<img src="${src}" style="max-width: 100%; height: auto; border-radius: 8px;" />`;
+                insertHtmlAtCursor(imgHtml);
+            };
+            reader.readAsDataURL(file);
+            return; // Only handle the first image
+        }
+    }
+    
+    // Fallback for plain text: prevent pasting styled text from other sources
+    // and just insert plain text.
+    event.preventDefault();
+    const text = clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
   };
 
   const handleAttachFile = (event: React.ChangeEvent<HTMLInputElement>) => {
