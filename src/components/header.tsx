@@ -59,7 +59,7 @@ export function Header() {
                   <span className="hidden md:inline">Calculadora</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-sm">
+              <DialogContent className="w-full max-w-sm">
                 <SimpleCalculator />
               </DialogContent>
            </Dialog>

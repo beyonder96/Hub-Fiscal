@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Calculator } from 'lucide-react';
@@ -64,21 +64,17 @@ export function SimpleCalculator() {
   ];
 
   return (
-    <Card className="w-full max-w-sm shadow-2xl border-primary/20">
+    <Card className="w-full max-w-sm shadow-none border-none p-0">
       <DialogHeader>
-        <DialogTitle className="sr-only">Calculadora</DialogTitle>
-        <DialogDescription className="sr-only">Uma calculadora simples para fazer cálculos rápidos.</DialogDescription>
-      </DialogHeader>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-headline">
-          <Calculator className="h-6 w-6 text-primary" />
-          Calculadora
-        </CardTitle>
-         <CardDescription>
+        <div className="flex items-center gap-2 mb-2">
+            <Calculator className="h-6 w-6 text-primary" />
+            <DialogTitle>Calculadora</DialogTitle>
+        </div>
+        <DialogDescription>
             Faça cálculos rápidos sem sair da página.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-4">
+        </DialogDescription>
+      </DialogHeader>
+      <CardContent className="p-0 pt-4">
         <div className="bg-muted rounded-lg p-4 text-right mb-4 min-h-[100px] flex flex-col justify-end">
           <div className="text-muted-foreground break-all text-lg">{input || '0'}</div>
           <div className="text-4xl font-bold break-all">{result}</div>
