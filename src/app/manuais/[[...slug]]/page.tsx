@@ -8,15 +8,15 @@ import { NotebookSidebar } from "@/components/notebook-sidebar";
 import { PageViewer } from "@/components/page-viewer";
 import { Card } from "@/components/ui/card";
 import { BookCopy } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
-export default function ManuaisPage({ params }: { params: { slug?: string[] } }) {
+export default function ManuaisPage() {
     const [notebooks, setNotebooks] = useState<Notebook[]>([]);
     const [activePage, setActivePage] = useState<ManualPage | null>(null);
     const [activeNotebookId, setActiveNotebookId] = useState<string | null>(null);
     const router = useRouter();
-
-    const { slug } = params;
+    const params = useParams();
+    const slug = params.slug as string[] | undefined;
 
     useEffect(() => {
         try {
