@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { BookMarked, Bot, FileCode, FileSpreadsheet, Search, Shield, Users, BookOpen, GitCommit, Calculator } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SimpleCalculator } from './simple-calculator';
 
 const toolLinks = [
@@ -52,17 +52,17 @@ export function Header() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
-           <Dialog>
-              <DialogTrigger asChild>
+           <Popover>
+              <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm">
                   <Calculator className="h-4 w-4 mr-0 md:mr-2" />
                   <span className="hidden md:inline">Calculadora</span>
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="w-full max-w-sm">
+              </PopoverTrigger>
+              <PopoverContent className="w-full max-w-sm p-0 border-none">
                 <SimpleCalculator />
-              </DialogContent>
-           </Dialog>
+              </PopoverContent>
+           </Popover>
 
            <Button asChild variant={pathname === "/updates" ? "secondary" : "ghost"} size="sm">
               <Link href="/updates">

@@ -1,7 +1,7 @@
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Calculator, FileCode, FileSpreadsheet, Search, Users, Bot } from "lucide-react";
+import { ArrowRight, Bot, FileCode, FileSpreadsheet, Search, Users } from "lucide-react";
 import Link from "next/link";
 
 const features = [
