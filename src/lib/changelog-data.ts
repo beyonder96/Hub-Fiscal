@@ -15,7 +15,7 @@ export interface ChangelogVersion {
 export const changelogData: ChangelogVersion[] = [
   {
     version: "1.2.0",
-    date: "2024-07-15",
+    date: "2025-07-15",
     changes: [
       {
         type: "feature",
@@ -31,7 +31,7 @@ export const changelogData: ChangelogVersion[] = [
   },
   {
     version: "1.1.0",
-    date: "2024-07-10",
+    date: "2025-07-10",
     changes: [
       {
         type: "feature",
@@ -52,7 +52,7 @@ export const changelogData: ChangelogVersion[] = [
   },
   {
     version: "1.0.0",
-    date: "2024-07-01",
+    date: "2025-07-01",
     changes: [
       {
         type: "feature",
