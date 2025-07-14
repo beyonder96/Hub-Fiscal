@@ -307,7 +307,6 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
             : '';
 
         const slipContent = `
-            <div class="slip-header">Resumo do Cálculo ${index + 1}</div>
             <div class="slip-body">
                 <div class="slip-item"><span>Alíquota Interna:</span> <strong>${formatPercent(calc.formData.aliqIcmsSt)}</strong></div>
                 <div class="slip-item"><span>IVA/MVA:</span> <strong>${formatPercent(calc.formData.mva)}</strong></div>
