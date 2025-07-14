@@ -5,6 +5,7 @@ import { ChangePasswordDialog } from "./change-password-dialog";
 import { AdminTasks } from "./admin-tasks";
 import { AdminAliquotas } from "./admin-aliquotas";
 import { AdminNotasFiscais } from "./admin-notas-fiscais";
+import { ManualsManager } from "./manuals-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { BookOpen } from "lucide-react";
@@ -39,16 +40,7 @@ export function AdminDashboard() {
                     <AdminAliquotas />
                 </TabsContent>
                 <TabsContent value="manuais">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Manuais e Documentação</CardTitle>
-                            <CardDescription>Esta área será desenvolvida em breve.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-col items-center justify-center text-center p-10">
-                            <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-                            <p className="text-muted-foreground">Em breve, você encontrará manuais e guias aqui.</p>
-                        </CardContent>
-                    </Card>
+                    <ManualsManager />
                 </TabsContent>
             </Tabs>
         </div>

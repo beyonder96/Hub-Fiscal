@@ -264,3 +264,19 @@ export interface Task {
   status: TaskStatus;
   createdAt: string; // ISO string
 }
+
+// --- Manuals / Notebook Definitions ---
+export interface ManualPage {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Notebook {
+  id: string;
+  title: string;
+  pages: ManualPage[];
+  createdAt: string;
+}
