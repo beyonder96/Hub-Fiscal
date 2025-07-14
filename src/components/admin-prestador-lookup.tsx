@@ -117,20 +117,33 @@ export function PrestadorLookup() {
   });
 
   const findManualPageForPrestador = (prestadorName: string): string | null => {
-      const pName = prestadorName.toUpperCase();
+      if (!prestadorName || manuals.length === 0) {
+        return null;
+      }
+      
+      const pNameUpper = prestadorName.toUpperCase();
       const keywords = ["VIVO", "ENEL"];
+      let foundKeyword: string | null = null;
+
+      for (const keyword of keywords) {
+          if (pNameUpper.includes(keyword)) {
+              foundKeyword = keyword;
+              break;
+          }
+      }
+
+      if (!foundKeyword) {
+          return null;
+      }
 
       for (const notebook of manuals) {
           for (const page of notebook.pages) {
-              const pageTitle = page.title.toUpperCase();
-              for (const keyword of keywords) {
-                  // Check if both prestador name and page title contain the keyword
-                  if (pName.includes(keyword) && pageTitle.includes(keyword)) {
-                      return page.id;
-                  }
+              if (page.title.toUpperCase().includes(foundKeyword)) {
+                  return page.id;
               }
           }
       }
+
       return null;
   };
 
@@ -449,3 +462,6 @@ export function PrestadorLookup() {
   );
 }
 
+
+
+    
