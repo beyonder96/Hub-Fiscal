@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SimpleCalculator } from './simple-calculator';
 import { Calculator, PanelLeft } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { Sidebar } from "./sidebar";
 
 export function Header() {
@@ -21,6 +21,10 @@ export function Header() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="p-0 pt-8 w-64">
+                    <SheetHeader className="sr-only">
+                      <SheetTitle>Menu Principal</SheetTitle>
+                      <SheetDescription>Navegue pelas funcionalidades do sistema.</SheetDescription>
+                    </SheetHeader>
                     <Sidebar />
                 </SheetContent>
             </Sheet>
