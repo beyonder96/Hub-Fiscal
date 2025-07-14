@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -108,4 +109,12 @@
     --secondary-bg: 217.2 32.6% 17.5% / 0.9;
     --muted-bg: 217.2 32.6% 17.5% / 0.95;
   }
+}
+
+/* Prose styles for contentEditable editor */
+.prose img {
+    @apply rounded-lg;
+}
+.prose a {
+    @apply text-primary underline hover:text-primary/80;
 }

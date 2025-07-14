@@ -4,7 +4,7 @@
 import type { Notebook } from "@/lib/definitions";
 import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
-import { PlusCircle, Book, FileText } from "lucide-react";
+import { PlusCircle, Book, FileText, Image, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Accordion,
@@ -44,7 +44,11 @@ export function NotebookSidebar({ notebooks, activeNotebookId, activePageId, onS
                   </AccordionTrigger>
                   <AccordionContent className="pb-0">
                       <div className="flex flex-col">
-                          {notebook.pages.length > 0 ? notebook.pages.map(page => (
+                          {notebook.pages.length > 0 ? notebook.pages.map(page => {
+                            const hasImage = page.content?.includes('<img');
+                            const hasAttachment = page.content?.includes('<a href="data:');
+
+                            return (
                               <Button
                                   key={page.id}
                                   variant="ghost"
@@ -54,10 +58,15 @@ export function NotebookSidebar({ notebooks, activeNotebookId, activePageId, onS
                                     page.id === activePageId && "bg-accent text-accent-foreground"
                                   )}
                               >
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  <span className="truncate">{page.title}</span>
+                                  <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
+                                  <span className="truncate flex-grow text-left">{page.title}</span>
+                                  <div className="flex gap-1.5 ml-2">
+                                    {hasImage && <Image className="h-4 w-4 text-muted-foreground" />}
+                                    {hasAttachment && <Paperclip className="h-4 w-4 text-muted-foreground" />}
+                                  </div>
                               </Button>
-                          )) : (
+                            )
+                          }) : (
                             <p className="px-8 py-2 text-xs text-muted-foreground">Nenhuma página.</p>
                           )}
                           <Button
