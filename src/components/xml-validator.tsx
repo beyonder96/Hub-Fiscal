@@ -105,6 +105,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
       vBC: getTagValue(icmsTot, 'vBC'),
       vICMS: getTagValue(icmsTot, 'vICMS'),
       vBCST: getTagValue(icmsTot, 'vICMSST') || getTagValue(icmsTot, 'vST'),
+      vICMSST: getTagValue(icmsTot, 'vICMSST') || getTagValue(icmsTot, 'vST'),
       vIPI: getTagValue(icmsTot, 'vIPI'),
     },
     products,
@@ -539,17 +540,18 @@ export function XmlValidator() {
   const checkStCalculationNeeded = (nfeData: NfeData | null): boolean => {
     if (!nfeData) return false;
     
-    // Criteria 1: Destination must be SP
+    // Criteria 1 & 2: Destination must be SP, Origin must not be SP
     const isDestSP = nfeData.destUf === 'SP';
-    if (!isDestSP) return false;
-    
-    // Criteria 2: Origin must not be SP
     const isOrigSP = nfeData.emitUf === 'SP';
-    if (isOrigSP) return false;
+    if (!isDestSP || isOrigSP) return false;
 
     // Criteria 3: Check if the origin state has a protocol. If it does, no calculation needed.
     const originStateData = initialTaxRates.find(r => r.destinationStateCode === nfeData.emitUf);
-    const hasProtocol = originStateData?.protocol ?? false; // Default to false (no protocol) if origin state is not in the list
+    
+    // If we can't find the origin state in our data, assume no protocol and calculation is needed.
+    if (!originStateData) return true; 
+
+    const hasProtocol = originStateData.protocol;
     
     // Show button only if there is NO protocol
     return !hasProtocol;
@@ -800,3 +802,5 @@ export function XmlValidator() {
     </Card>
   );
 }
+
+    
