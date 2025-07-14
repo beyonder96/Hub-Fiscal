@@ -9,7 +9,7 @@ export const initialTaxRates: TaxRateData[] = [
     { destinationStateName: "Bahia", destinationStateCode: "BA", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 20.5, suframa: false, protocol: false },
     { destinationStateName: "Ceará", destinationStateCode: "CE", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 20, suframa: false, protocol: false },
     { destinationStateName: "Distrito Federal", destinationStateCode: "DF", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 20, suframa: false, protocol: false },
-    { destinationStateName: "Espírito Santo", destinationStateCode: "ES", interstateRate: { ES: 17, SP: 7 }, importedRate: 4, internalDestinationRate: 17, suframa: false, protocol: true },
+    { destinationStateName: "Espírito Santo", destinationStateCode: "ES", interstateRate: { ES: 17, SP: 7 }, importedRate: 4, internalDestinationRate: 17, suframa: false, protocol: false },
     { destinationStateName: "Goiás", destinationStateCode: "GO", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 19, suframa: false, protocol: false },
     { destinationStateName: "Maranhão", destinationStateCode: "MA", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 23, suframa: false, protocol: false },
     { destinationStateName: "Mato Grosso", destinationStateCode: "MT", interstateRate: { ES: 12, SP: 7 }, importedRate: 4, internalDestinationRate: 17, suframa: false, protocol: false },

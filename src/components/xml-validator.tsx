@@ -539,22 +539,25 @@ export function XmlValidator() {
 
   const checkStCalculationNeeded = (nfeData: NfeData | null): boolean => {
     if (!nfeData) return false;
-    
-    // Criteria 1 & 2: Destination must be SP, Origin must not be SP
-    const isDestSP = nfeData.destUf === 'SP';
-    const isOrigSP = nfeData.emitUf === 'SP';
-    if (!isDestSP || isOrigSP) return false;
 
-    // Criteria 3: Check if the origin state has a protocol. If it does, no calculation needed.
-    const originStateData = initialTaxRates.find(r => r.destinationStateCode === nfeData.emitUf);
-    
-    // If we can't find the origin state in our data, assume no protocol and calculation is needed.
-    if (!originStateData) return true; 
+    const { destUf, emitUf } = nfeData;
 
-    const hasProtocol = originStateData.protocol;
+    // Condition 1: Destination must be SP
+    if (destUf !== 'SP') return false;
+
+    // Condition 2: Origin must not be SP
+    if (emitUf === 'SP') return false;
+
+    // Condition 3: The origin state must not have a protocol.
+    const originStateData = initialTaxRates.find(r => r.destinationStateCode === emitUf);
     
-    // Show button only if there is NO protocol
-    return !hasProtocol;
+    // If we can't find the origin state's data, we can't determine protocol status.
+    // Safest to assume calculation might be needed. Or we could return false.
+    // For this use case, let's assume if it's not in our list, it doesn't have a protocol.
+    if (!originStateData) return true;
+
+    // Show button only if the origin state does NOT have a protocol
+    return !originStateData.protocol;
   };
 
   return (
@@ -802,5 +805,3 @@ export function XmlValidator() {
     </Card>
   );
 }
-
-    
