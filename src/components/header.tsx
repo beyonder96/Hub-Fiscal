@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookMarked, Calculator, FileCode, FileSpreadsheet, Search, Shield, Users, BookOpen } from "lucide-react";
+import { BookMarked, Calculator, FileCode, FileSpreadsheet, Search, Shield, Users, BookOpen, GitCommit } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
@@ -50,6 +50,12 @@ export function Header() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
+           <Button asChild variant={pathname === "/updates" ? "secondary" : "ghost"} size="sm">
+              <Link href="/updates">
+                <GitCommit className="h-4 w-4 mr-0 md:mr-2" />
+                <span className="hidden md:inline">Atualizações</span>
+              </Link>
+            </Button>
            <Button asChild variant={pathname === "/admin" ? "secondary" : "ghost"}>
               <Link href="/admin">
                 <Shield className="h-4 w-4 mr-0 md:mr-2" />
