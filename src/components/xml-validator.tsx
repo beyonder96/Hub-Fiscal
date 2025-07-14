@@ -37,8 +37,11 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
   const rawNatOp = getTagValue(ide, 'natOp') || 'N/A';
   let natOp = rawNatOp;
   if (rawNatOp.toLowerCase().startsWith('venda merc') || rawNatOp.toLowerCase().startsWith('vnd mer')) {
-    natOp = 'Venda';
+    natOp = 'Venda de Mercadoria';
+  } else if (rawNatOp.toLowerCase().includes('remessa p/ conserto')) {
+      natOp = 'Remessa p/ Conserto';
   }
+
 
   const products: NfeProductData[] = Array.from(xmlDoc.querySelectorAll('det')).map(det => {
     const prod = det.querySelector('prod');
@@ -100,8 +103,7 @@ const parseNfeXml = (xmlDoc: Document, fileName: string): NfeData => {
     total: {
       vBC: getTagValue(icmsTot, 'vBC'),
       vICMS: getTagValue(icmsTot, 'vICMS'),
-      vBCST: getTagValue(icmsTot, 'vBCST'),
-      vICMSST: getTagValue(icmsTot, 'vICMSST') || getTagValue(icmsTot, 'vST'),
+      vBCST: getTagValue(icmsTot, 'vICMSST') || getTagValue(icmsTot, 'vST'),
       vIPI: getTagValue(icmsTot, 'vIPI'),
     },
     products,
@@ -596,7 +598,7 @@ export function XmlValidator() {
                           <Card className="h-full flex flex-col">
                             <CardHeader>
                               <div className="flex justify-between items-start gap-2">
-                                <CardTitle className="truncate text-lg">{result.fileName}</CardTitle>
+                                <CardTitle className="truncate text-lg">{result.nfeData?.chave || result.fileName}</CardTitle>
                                 <Badge variant={overallStatus === 'Erro' ? 'destructive' : overallStatus === 'Divergente' ? 'secondary' : 'default'} className="flex-shrink-0">
                                   {overallStatus}
                                 </Badge>
@@ -628,45 +630,45 @@ export function XmlValidator() {
                                           <p className="text-muted-foreground">UF: {result.nfeData?.destUf || "N/A"}</p>
                                       </CardContent>
                                   </Card>
-                                  <div>
-                                    <h4 className="font-semibold mb-2 text-primary">Tipo de Entrada</h4>
-                                    <RadioGroup value={result.selectedInputType} onValueChange={(v: NfeInputType) => updateResultInputType(result.id, v)} className="flex flex-wrap gap-4">
-                                      {NfeInputTypes.map(type => (
-                                        <div key={type} className="flex items-center space-x-2">
-                                          <RadioGroupItem value={type} id={`${result.id}-${type}`} />
-                                          <Label htmlFor={`${result.id}-${type}`}>{type}</Label>
-                                        </div>
-                                      ))}
-                                    </RadioGroup>
-                                  </div>
+                              </div>
+                              <div>
+                                <h4 className="font-semibold mb-2 mt-4 text-primary">Tipo de Entrada</h4>
+                                <RadioGroup value={result.selectedInputType} onValueChange={(v: NfeInputType) => updateResultInputType(result.id, v)} className="flex flex-wrap gap-4">
+                                  {NfeInputTypes.map(type => (
+                                    <div key={type} className="flex items-center space-x-2">
+                                      <RadioGroupItem value={type} id={`${result.id}-${type}`} />
+                                      <Label htmlFor={`${result.id}-${type}`}>{type}</Label>
+                                    </div>
+                                  ))}
+                                </RadioGroup>
                               </div>
                               
                               {showStButton && (
-                                <Button className="w-full" onClick={() => handleCalculateSt(result)}>
+                                <Button className="w-full mt-4" onClick={() => handleCalculateSt(result)}>
                                     <Calculator className="mr-2" />
                                     Calcular ICMS-ST
                                 </Button>
                               )}
 
-                              <Tabs defaultValue="fiscal">
+                              <Tabs defaultValue="fiscal" className="mt-4">
                                   <TabsList className="grid w-full grid-cols-2">
                                       <TabsTrigger value="fiscal">Dados Fiscais</TabsTrigger>
                                       <TabsTrigger value="products">Produtos ({result.nfeData?.products.length})</TabsTrigger>
                                   </TabsList>
                                   <TabsContent value="fiscal" className="mt-4 space-y-4">
                                       <Card>
-                                          <CardHeader><CardTitle>Geral</CardTitle></CardHeader>
-                                          <CardContent className="space-y-2 text-sm">
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Natureza:</span><span className="font-medium">{result.nfeData?.natOp || "N/A"}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Nº NFe:</span><span className="font-medium">{result.nfeData?.nNf || "N/A"}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Emissão:</span><span className="font-medium">{result.nfeData?.dhEmi ? format(new Date(result.nfeData.dhEmi), "dd/MM/yy HH:mm") : 'N/A'}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Frete Total:</span><span className="font-medium">R$ {result.nfeData?.vFrete || "0.00"}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Valor Total:</span><span className="font-bold text-base text-primary">R$ {result.nfeData?.vNF || "0.00"}</span></div>
+                                          <CardHeader className="p-4"><CardTitle className="text-lg">Geral</CardTitle></CardHeader>
+                                          <CardContent className="p-4 pt-0 text-sm grid grid-cols-2 gap-x-4 gap-y-2">
+                                            <span className="text-muted-foreground">Natureza:</span><span className="font-medium text-right">{result.nfeData?.natOp || "N/A"}</span>
+                                            <span className="text-muted-foreground">Nº NFe:</span><span className="font-medium text-right">{result.nfeData?.nNf || "N/A"}</span>
+                                            <span className="text-muted-foreground">Emissão:</span><span className="font-medium text-right">{result.nfeData?.dhEmi ? format(new Date(result.nfeData.dhEmi), "dd/MM/yy HH:mm") : 'N/A'}</span>
+                                            <span className="text-muted-foreground">Frete Total:</span><span className="font-medium text-right">R$ {result.nfeData?.vFrete || "0.00"}</span>
+                                            <span className="text-muted-foreground">Valor Total:</span><span className="font-bold text-base text-primary text-right">R$ {result.nfeData?.vNF || "0.00"}</span>
                                           </CardContent>
                                       </Card>
                                       <Card>
-                                          <CardHeader><CardTitle>Validação dos Cálculos</CardTitle></CardHeader>
-                                          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          <CardHeader className="p-4"><CardTitle className="text-lg">Validação dos Cálculos</CardTitle></CardHeader>
+                                          <CardContent className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 gap-4">
                                               <ValidationStatusDisplay validation={result.calculationValidations.vBC} />
                                               <ValidationStatusDisplay validation={result.calculationValidations.vICMS} />
                                               <ValidationStatusDisplay validation={result.calculationValidations.vIPI} />
