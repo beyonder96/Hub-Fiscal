@@ -118,12 +118,19 @@ export function PrestadorLookup() {
 
   const findManualPageForPrestador = (prestadorName: string): string | null => {
     const normalizedName = prestadorName.toUpperCase();
+  
     for (const notebook of manuals) {
       for (const page of notebook.pages) {
-        if (page.title.toUpperCase() === normalizedName || page.title.toUpperCase() === 'VIVO' && normalizedName.includes('VIVO')) {
-           return page.id;
+        const pageTitle = page.title.toUpperCase();
+        // Check for specific keywords within the provider's name
+        if (pageTitle === 'VIVO' && normalizedName.includes('VIVO')) {
+          return page.id;
         }
-        if (page.title.toUpperCase() === 'ENEL SP' && normalizedName.includes('ENEL')) {
+        if (pageTitle === 'ENEL SP' && normalizedName.includes('ENEL')) {
+          return page.id;
+        }
+        // Fallback to exact match
+        if (pageTitle === normalizedName) {
           return page.id;
         }
       }
