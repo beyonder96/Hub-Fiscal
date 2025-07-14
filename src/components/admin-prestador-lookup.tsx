@@ -122,16 +122,16 @@ export function PrestadorLookup() {
     for (const notebook of manuals) {
       for (const page of notebook.pages) {
         const pageTitle = page.title.toUpperCase();
-        // Check for specific keywords within the provider's name
-        if (pageTitle === 'VIVO' && normalizedName.includes('VIVO')) {
+        
+        if (pageTitle === "VIVO" && normalizedName.includes("VIVO")) {
           return page.id;
         }
-        if (pageTitle === 'ENEL SP' && normalizedName.includes('ENEL')) {
+        if (pageTitle === "ENEL SP" && normalizedName.includes("ENEL")) {
           return page.id;
         }
-        // Fallback to exact match
+        // Fallback to exact match just in case
         if (pageTitle === normalizedName) {
-          return page.id;
+            return page.id;
         }
       }
     }
@@ -452,3 +452,4 @@ export function PrestadorLookup() {
     </Card>
   );
 }
+
