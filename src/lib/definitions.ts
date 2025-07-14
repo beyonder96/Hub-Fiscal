@@ -249,6 +249,8 @@ export const prestadorSchema = z.object({
   codPcc: z.string().optional(),
   email: z.string().optional(),
   autenticidadeUrl: z.string().optional(),
+  lastModifiedBy: z.string().optional(),
+  lastModifiedAt: z.string().optional(), // ISO string
 });
 
 export type PrestadorFormData = z.infer<typeof prestadorSchema>;

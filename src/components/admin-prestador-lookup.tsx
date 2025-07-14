@@ -22,8 +22,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Building, SearchX, PlusCircle, Pencil, Trash2, Link as LinkIcon, Briefcase, FileText, Landmark, Percent, CalendarDays, Key, MapPin, Mail, FileCheck2, User, Users, ShieldQuestion } from "lucide-react";
+import { Search, Building, SearchX, PlusCircle, Pencil, Trash2, Link as LinkIcon, Briefcase, FileText, Landmark, Percent, CalendarDays, Key, MapPin, Mail, FileCheck2, User, Users, ShieldQuestion, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 const InfoBox = ({ label, value, icon, className }: { label: string; value?: string; icon: React.ElementType; className?: string }) => {
   const Icon = icon;
@@ -124,7 +125,27 @@ export function PrestadorLookup() {
     if (prestador) {
       form.reset(prestador);
     } else {
-      form.reset();
+      form.reset({
+        empresa: 'MATRIZ',
+        nome: '',
+        fornecedor: '',
+        descricao: '',
+        servico: '',
+        tes: '',
+        conta: '',
+        vencimento: '',
+        municipio: '',
+        nfts: 'NÃO',
+        simplesNacional: 'NÃO',
+        iss: 'NÃO',
+        ir: 'NÃO',
+        pcc: 'NÃO',
+        inss: 'NÃO',
+        codIr: '',
+        codPcc: '',
+        email: '',
+        autenticidadeUrl: '',
+      });
     }
     setIsFormOpen(true);
   };
@@ -140,18 +161,22 @@ export function PrestadorLookup() {
 
   const onSubmit = (data: PrestadorFormData) => {
     let updatedPrestadores;
+    const auditInfo = {
+        lastModifiedBy: "Admin", // Placeholder for actual user logic
+        lastModifiedAt: new Date().toISOString()
+    };
+
     if (editingPrestador) {
-      // Update
-      const updatedPrestador = { ...editingPrestador, ...data };
+      const updatedPrestador: Prestador = { ...editingPrestador, ...data, ...auditInfo };
       updatedPrestadores = prestadores.map(p => p.id === editingPrestador.id ? updatedPrestador : p);
       setSelectedPrestador(updatedPrestador);
       toast({ title: "Prestador atualizado com sucesso!" });
     } else {
-      // Create
       const newPrestador: Prestador = {
         ...data,
         id: data.fornecedor || `gen_${new Date().getTime()}`,
-        nomeBusca: data.nome.toLowerCase()
+        nomeBusca: data.nome.toLowerCase(),
+        ...auditInfo,
       };
       updatedPrestadores = [newPrestador, ...prestadores];
       toast({ title: "Prestador adicionado com sucesso!" });
@@ -291,6 +316,11 @@ export function PrestadorLookup() {
                   </a>
                  </Button>
               )}
+               {selectedPrestador.lastModifiedAt && (
+                <div className="mt-4 text-xs text-muted-foreground text-center border-t pt-4">
+                  Última alteração por <span className="font-semibold">{selectedPrestador.lastModifiedBy || 'N/A'}</span> em {format(new Date(selectedPrestador.lastModifiedAt), "dd/MM/yyyy 'às' HH:mm")}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -354,7 +384,7 @@ export function PrestadorLookup() {
                   </div>
                 </div>
               </ScrollArea>
-              <DialogFooter className="pt-4">
+              <DialogFooter className="pt-4 border-t mt-4">
                 <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
                 <Button type="submit">Salvar</Button>
               </DialogFooter>
