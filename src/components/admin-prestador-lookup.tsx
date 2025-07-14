@@ -117,35 +117,36 @@ export function PrestadorLookup() {
   });
 
   const findManualPageForPrestador = (prestadorName: string): string | null => {
-      if (!prestadorName || manuals.length === 0) {
-        return null;
-      }
-      
-      const pNameUpper = prestadorName.toUpperCase();
-      const keywords = ["VIVO", "ENEL"];
-      let foundKeyword: string | null = null;
-
-      for (const keyword of keywords) {
-          if (pNameUpper.includes(keyword)) {
-              foundKeyword = keyword;
-              break;
-          }
-      }
-
-      if (!foundKeyword) {
-          return null;
-      }
-
-      for (const notebook of manuals) {
-          for (const page of notebook.pages) {
-              if (page.title.toUpperCase().includes(foundKeyword)) {
-                  return page.id;
-              }
-          }
-      }
-
+    if (!prestadorName || manuals.length === 0) {
       return null;
+    }
+  
+    const pNameUpper = prestadorName.toUpperCase();
+    const keywords = ["VIVO", "ENEL"];
+    let foundKeyword: string | null = null;
+  
+    for (const keyword of keywords) {
+      if (pNameUpper.includes(keyword)) {
+        foundKeyword = keyword;
+        break;
+      }
+    }
+  
+    if (!foundKeyword) {
+      return null;
+    }
+  
+    for (const notebook of manuals) {
+      for (const page of notebook.pages) {
+        if (page.title.toUpperCase().includes(foundKeyword)) {
+          return page.id;
+        }
+      }
+    }
+  
+    return null;
   };
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -441,7 +442,7 @@ export function PrestadorLookup() {
                         <FormField control={form.control} name="pcc" render={({ field }) => (<FormItem><FormLabel>PCC</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="SIM">SIM</SelectItem><SelectItem value="NÃO">NÃO</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="inss" render={({ field }) => (<FormItem><FormLabel>INSS</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="SIM">SIM</SelectItem><SelectItem value="NÃO">NÃO</SelectItem><SelectItem value="PORTO">PORTO</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="codIr" render={({ field }) => (<FormItem><FormLabel>Cód. IR</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="codPcc" render={({ field }) => (<FormItem><FormLabel>Cód. PCC</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="codPcc" render={({ field }) => (<FormItem><FormLabel>Cód. PCC</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormMessage>)} />
                      </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -461,7 +462,3 @@ export function PrestadorLookup() {
     </Card>
   );
 }
-
-
-
-    
