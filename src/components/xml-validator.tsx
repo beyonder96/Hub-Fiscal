@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { FileCode, Upload, CheckCircle2, XCircle, AlertTriangle, FileDown, Trash2, History, Info, Calculator } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Switch } from "./ui/switch";
 
 const MAX_HISTORY_ITEMS = 15;
 const MAX_FILES = 15;
@@ -128,7 +129,7 @@ const runValidations = (data: NfeData, inputType: NfeInputType): ValidationResul
     if (inputType === 'Conserto') {
         const actualTotalVIcms = parseFloat(data.total.vICMS || '0');
         const actualTotalVIpi = parseFloat(data.total.vIPI || '0');
-        const actualTotalVICMSST = parseFloat(data.total.vICMSST || '0');
+        const actualTotalVICMSST = parseFloat(data.total.vBCST || '0');
 
         if (!isConsertoOperation) {
             const errorMsg = `Tipo de entrada 'Conserto' selecionado, mas o CFOP (${firstProductCfop}) não é de remessa para conserto.`;
@@ -537,13 +538,20 @@ export function XmlValidator() {
 
   const checkStCalculationNeeded = (nfeData: NfeData | null): boolean => {
     if (!nfeData) return false;
+    
+    // Criteria 1: Destination must be SP
     const isDestSP = nfeData.destUf === 'SP';
-    const isEmitNotSP = nfeData.emitUf !== 'SP';
-    if (!isDestSP || !isEmitNotSP) return false;
+    if (!isDestSP) return false;
+    
+    // Criteria 2: Origin must not be SP
+    const isOrigSP = nfeData.emitUf === 'SP';
+    if (isOrigSP) return false;
 
-    const protocolData = initialTaxRates.find(r => r.destinationStateCode === nfeData.destUf && r.interstateRate.hasOwnProperty(nfeData.emitUf as 'ES' | 'SP'));
-    const hasProtocol = protocolData?.protocol ?? true; // Assume protocol if not found to be safe
-
+    // Criteria 3: Check if the origin state has a protocol. If it does, no calculation needed.
+    const originStateData = initialTaxRates.find(r => r.destinationStateCode === nfeData.emitUf);
+    const hasProtocol = originStateData?.protocol ?? false; // Default to false (no protocol) if origin state is not in the list
+    
+    // Show button only if there is NO protocol
     return !hasProtocol;
   };
 
