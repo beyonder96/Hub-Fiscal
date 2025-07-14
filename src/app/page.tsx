@@ -1,12 +1,12 @@
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Calculator, FileCode, FileSpreadsheet, Search, Users } from "lucide-react";
+import { ArrowRight, Calculator, FileCode, FileSpreadsheet, Search, Users, Bot } from "lucide-react";
 import Link from "next/link";
 
 const features = [
   {
-    icon: <Calculator className="h-8 w-8 text-primary" />,
+    icon: <Search className="h-8 w-8 text-primary" />,
     title: "Consulta de Alíquota",
     description: "Consulte rapidamente as alíquotas de ICMS entre estados.",
     href: "/consulta-aliquota",
@@ -38,12 +38,20 @@ const features = [
     textColor: "text-teal-300"
   },
    {
-    icon: <Search className="h-8 w-8 text-primary" />,
+    icon: <Bot className="h-8 w-8 text-primary" />,
     title: "Pesquisa de TES",
     description: "Encontre informações detalhadas sobre o Tipo de Entrada e Saída.",
     href: "/pesquisa-tes",
     bgColor: "bg-yellow-500/10",
     textColor: "text-yellow-300"
+  },
+  {
+    icon: <Calculator className="h-8 w-8 text-primary" />,
+    title: "Calculadora",
+    description: "Realize cálculos rápidos sem sair do sistema.",
+    href: "/calculadora",
+    bgColor: "bg-red-500/10",
+    textColor: "text-red-300"
   },
 ];
 
