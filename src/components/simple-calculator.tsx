@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Calculator } from 'lucide-react';
+import { DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 
 export function SimpleCalculator() {
   const [input, setInput] = useState('');
@@ -64,6 +65,10 @@ export function SimpleCalculator() {
 
   return (
     <Card className="w-full max-w-sm shadow-2xl border-primary/20">
+      <DialogHeader>
+        <DialogTitle className="sr-only">Calculadora</DialogTitle>
+        <DialogDescription className="sr-only">Uma calculadora simples para fazer cálculos rápidos.</DialogDescription>
+      </DialogHeader>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-headline">
           <Calculator className="h-6 w-6 text-primary" />
