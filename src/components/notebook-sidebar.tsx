@@ -19,10 +19,11 @@ interface NotebookSidebarProps {
   activeNotebookId: string | null;
   activePageId: string | null;
   onSelectPage: (notebookId: string, pageId: string) => void;
-  onNewPage: (notebookId: string) => void;
+  onNewPage?: (notebookId: string) => void;
+  isReadOnly?: boolean;
 }
 
-export function NotebookSidebar({ notebooks, activeNotebookId, activePageId, onSelectPage, onNewPage }: NotebookSidebarProps) {
+export function NotebookSidebar({ notebooks, activeNotebookId, activePageId, onSelectPage, onNewPage, isReadOnly = false }: NotebookSidebarProps) {
   if (notebooks.length === 0) {
     return (
         <div className="p-4 text-center text-sm text-muted-foreground">
@@ -69,14 +70,16 @@ export function NotebookSidebar({ notebooks, activeNotebookId, activePageId, onS
                           }) : (
                             <p className="px-8 py-2 text-xs text-muted-foreground">Nenhuma página.</p>
                           )}
-                          <Button
-                              variant="ghost"
-                              onClick={() => onNewPage(notebook.id)}
-                              className="w-full justify-start rounded-none pl-8 h-9 text-muted-foreground hover:text-primary"
-                          >
-                              <PlusCircle className="mr-2 h-4 w-4" />
-                              <span>Adicionar Página</span>
-                          </Button>
+                          {!isReadOnly && onNewPage && (
+                            <Button
+                                variant="ghost"
+                                onClick={() => onNewPage(notebook.id)}
+                                className="w-full justify-start rounded-none pl-8 h-9 text-muted-foreground hover:text-primary"
+                            >
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                <span>Adicionar Página</span>
+                            </Button>
+                          )}
                       </div>
                   </AccordionContent>
               </AccordionItem>

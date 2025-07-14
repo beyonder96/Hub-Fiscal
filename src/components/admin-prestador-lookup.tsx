@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Prestador, PrestadorFormData } from "@/lib/definitions";
+import type { Prestador, PrestadorFormData, Notebook } from "@/lib/definitions";
 import { prestadorSchema } from "@/lib/definitions";
 import { initialPrestadores } from "@/lib/prestador-data";
 import { useToast } from "@/hooks/use-toast";
@@ -22,9 +22,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Building, SearchX, PlusCircle, Pencil, Trash2, Link as LinkIcon, Briefcase, FileText, Landmark, Percent, CalendarDays, Key, MapPin, Mail, FileCheck2, User, Users, ShieldQuestion, Edit } from "lucide-react";
+import { Search, Building, SearchX, PlusCircle, Pencil, Trash2, Link as LinkIcon, Briefcase, FileText, Landmark, Percent, CalendarDays, Key, MapPin, Mail, FileCheck2, User, Users, ShieldQuestion, Edit, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import Link from "next/link";
 
 const InfoBox = ({ label, value, icon, className }: { label: string; value?: string; icon: React.ElementType; className?: string }) => {
   const Icon = icon;
@@ -52,10 +53,12 @@ const BooleanBadge = ({ label, value }: { label: string, value?: string }) => {
 export function PrestadorLookup() {
   const [query, setQuery] = useState("");
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
+  const [manuals, setManuals] = useState<Notebook[]>([]);
   const [selectedPrestador, setSelectedPrestador] = useState<Prestador | null>(null);
   const [searched, setSearched] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPrestador, setEditingPrestador] = useState<Prestador | null>(null);
+  const [manualPageId, setManualPageId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,8 +75,14 @@ export function PrestadorLookup() {
         setPrestadores(fullInitialData);
         localStorage.setItem("prestadores", JSON.stringify(fullInitialData));
       }
+
+      const storedManuals = localStorage.getItem("manualsNotebooks");
+      if (storedManuals) {
+        setManuals(JSON.parse(storedManuals));
+      }
+
     } catch (error) {
-      console.error("Failed to load prestadores", error);
+      console.error("Failed to load data from localStorage", error);
     }
   }, []);
 
@@ -107,17 +116,40 @@ export function PrestadorLookup() {
     }
   });
 
+  const findManualPageForPrestador = (prestadorName: string): string | null => {
+    const normalizedName = prestadorName.toUpperCase();
+    for (const notebook of manuals) {
+      for (const page of notebook.pages) {
+        if (page.title.toUpperCase() === normalizedName || page.title.toUpperCase() === 'VIVO' && normalizedName.includes('VIVO')) {
+           return page.id;
+        }
+        if (page.title.toUpperCase() === 'ENEL SP' && normalizedName.includes('ENEL')) {
+          return page.id;
+        }
+      }
+    }
+    return null;
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query) {
       setSelectedPrestador(null);
       setSearched(false);
+      setManualPageId(null);
       return;
     }
     const lowerCaseQuery = query.toLowerCase();
     const found = prestadores.find(p => p.nome.toLowerCase().includes(lowerCaseQuery) || p.nomeBusca.toLowerCase().includes(lowerCaseQuery));
     setSelectedPrestador(found || null);
     setSearched(true);
+    
+    if (found) {
+        const pageId = findManualPageForPrestador(found.nome);
+        setManualPageId(pageId);
+    } else {
+        setManualPageId(null);
+    }
   };
   
   const handleOpenForm = (prestador: Prestador | null) => {
@@ -318,12 +350,20 @@ export function PrestadorLookup() {
                    </Button>
                 )}
                 {selectedPrestador.nfts === 'SIM' && (
-                  <Button asChild className="w-full bg-gradient-to-r from-accent to-primary text-white">
+                  <Button asChild className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white">
                     <a href="https://nfe.prefeitura.sp.gov.br/login.aspx" target="_blank" rel="noopener noreferrer">
                       <FileCheck2 className="mr-2 h-4 w-4" />
                       Emitir NFTS
                     </a>
                   </Button>
+                )}
+                {manualPageId && (
+                    <Button asChild variant="secondary" className="w-full">
+                        <Link href={`/manuais/page/${manualPageId}`}>
+                            <HelpCircle className="mr-2 h-4 w-4" />
+                            Saiba como fazer
+                        </Link>
+                    </Button>
                 )}
               </div>
                {selectedPrestador.lastModifiedAt && (
@@ -389,7 +429,7 @@ export function PrestadorLookup() {
                      </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       <FormField control={form.control} name="autenticidadeUrl" render={({ field }) => (<FormItem><FormLabel>URL de Autenticidade</FormLabel><FormControl><Input type="url" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </div>

@@ -112,17 +112,21 @@ export function ManualsManager() {
     };
     
     const handleDeletePage = (notebookId: string, pageId: string) => {
+        let wasActivePageDeleted = activePageId === pageId;
+
         const updatedNotebooks = notebooks.map(nb => {
             if (nb.id === notebookId) {
+                 if (nb.pages.length === 1 && nb.pages[0].id === pageId) {
+                    return null; // Mark notebook for deletion
+                }
                 return { ...nb, pages: nb.pages.filter(p => p.id !== pageId) };
             }
             return nb;
-        }).filter(nb => nb.pages.length > 0 || nb.id !== notebookId); // Delete notebook if empty
+        }).filter(nb => nb !== null) as Notebook[];
 
         saveNotebooks(updatedNotebooks);
         
-        // If the deleted page was active, select another one or none
-        if (activePageId === pageId) {
+        if (wasActivePageDeleted) {
             setActivePageId(null);
             setActiveNotebookId(null);
             if (updatedNotebooks.length > 0) {

@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookMarked, Calculator, FileCode, FileSpreadsheet, Search, Shield, Users } from "lucide-react";
+import { BookMarked, Calculator, FileCode, FileSpreadsheet, Search, Shield, Users, BookOpen } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
@@ -12,10 +13,18 @@ const toolLinks = [
   { href: "/calculo-icms-st", label: "Cálculo ICMS-ST", icon: FileSpreadsheet },
   { href: "/pesquisa-tes", label: "Pesquisa de TES", icon: Search },
   { href: "/chamados", label: "Consulta Prestador", icon: Users },
+  { href: "/manuais", label: "Manuais", icon: BookOpen },
 ];
 
 export function Header() {
   const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === "/manuais") {
+      return pathname.startsWith(href);
+    }
+    return pathname === href;
+  }
 
   return (
     <header className="py-2 px-4 border-b sticky top-0 z-40 bg-background/60 backdrop-blur-lg glass-effect">
@@ -31,7 +40,7 @@ export function Header() {
           </Link>
           <nav className="hidden md:flex items-center gap-1">
             {toolLinks.map((link) => (
-              <Button asChild variant={pathname === link.href ? "secondary" : "ghost"} key={link.href} size="sm">
+              <Button asChild variant={isActive(link.href) ? "secondary" : "ghost"} key={link.href} size="sm">
                 <Link href={link.href}>
                   <link.icon className="h-4 w-4" />
                   {link.label}
