@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Calculator } from 'lucide-react';
-import { DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 
 export function SimpleCalculator() {
   const [input, setInput] = useState('');
@@ -64,16 +63,16 @@ export function SimpleCalculator() {
   ];
 
   return (
-    <Card className="w-full max-w-sm shadow-none border-none p-0">
-      <DialogHeader>
-        <div className="flex items-center gap-2 mb-2">
+    <Card className="w-full max-w-sm shadow-none border-none p-4">
+      <div className="text-left mb-4">
+        <div className="flex items-center gap-2">
             <Calculator className="h-6 w-6 text-primary" />
-            <DialogTitle>Calculadora</DialogTitle>
+            <h3 className="text-lg font-semibold leading-none tracking-tight">Calculadora</h3>
         </div>
-        <DialogDescription>
+        <p className="text-sm text-muted-foreground mt-1.5">
             Faça cálculos rápidos sem sair da página.
-        </DialogDescription>
-      </DialogHeader>
+        </p>
+      </div>
       <CardContent className="p-0 pt-4">
         <div className="bg-muted rounded-lg p-4 text-right mb-4 min-h-[100px] flex flex-col justify-end">
           <div className="text-muted-foreground break-all text-lg">{input || '0'}</div>
