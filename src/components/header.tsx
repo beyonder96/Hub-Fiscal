@@ -11,7 +11,7 @@ import { SidebarContent } from "./sidebar-content";
 
 export function Header() {
   return (
-    <header className="py-2 px-4 border-b sticky top-0 z-40 bg-background/60 backdrop-blur-lg glass-effect h-16 flex items-center">
+    <header className="py-2 px-4 border-b sticky top-0 z-40 bg-background/60 backdrop-blur-xl glass-effect h-16 flex items-center">
         <div className="md:hidden">
             <Sheet>
                 <SheetTrigger asChild>
@@ -20,12 +20,12 @@ export function Header() {
                         <span className="sr-only">Toggle Menu</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0 pt-8 w-64 bg-background/60 backdrop-blur-lg glass-effect">
+                <SheetContent side="left" className="p-0 pt-8 w-64 bg-background/60 backdrop-blur-xl glass-effect">
                     <SheetHeader className="sr-only">
                       <SheetTitle>Menu Principal</SheetTitle>
                       <SheetDescription>Navegue pelas funcionalidades do sistema.</SheetDescription>
                     </SheetHeader>
-                    <SidebarContent />
+                    <SidebarContent isCollapsed={false} />
                 </SheetContent>
             </Sheet>
         </div>

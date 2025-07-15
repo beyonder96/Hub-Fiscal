@@ -20,7 +20,11 @@ const navLinks = [
   { href: "/admin", label: "Admin", icon: Shield },
 ];
 
-export function SidebarContent() {
+interface SidebarContentProps {
+    isCollapsed: boolean;
+}
+
+export function SidebarContent({ isCollapsed }: SidebarContentProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
@@ -30,25 +34,28 @@ export function SidebarContent() {
   };
     
   return (
-    <nav className="flex-1 px-4 py-4 space-y-2">
-      <TooltipProvider>
+    <nav className="flex-1 px-2 py-4 space-y-2">
+      <TooltipProvider delayDuration={0}>
           {navLinks.map((link) => (
             <Tooltip key={link.href}>
               <TooltipTrigger asChild>
                   <Link
                     href={link.href}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10",
+                      "flex items-center gap-3 rounded-lg py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10",
+                      isCollapsed ? "justify-center px-2" : "px-3",
                       isActive(link.href) && "bg-primary/10 text-primary font-semibold"
                     )}
                   >
-                    <link.icon className="h-5 w-5" />
-                    <span>{link.label}</span>
+                    <link.icon className="h-5 w-5 shrink-0" />
+                    <span className={cn("truncate", isCollapsed && "hidden")}>{link.label}</span>
                   </Link>
               </TooltipTrigger>
-              <TooltipContent side="right">
-                  <p>{link.label}</p>
-              </TooltipContent>
+              {isCollapsed && (
+                <TooltipContent side="right">
+                    <p>{link.label}</p>
+                </TooltipContent>
+              )}
             </Tooltip>
           ))}
       </TooltipProvider>
