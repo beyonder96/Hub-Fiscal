@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -67,15 +68,13 @@ export function RejectedNotesViewer() {
             </div>
         </div>
         
-        {showNotFoundAlert && (
-          <Alert className="mb-4 border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
+        <Alert className="mb-4 border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Não encontrou o que procurava?</AlertTitle>
             <AlertDescription>
               Caso não encontre a nota, por favor, procure ajuda do setor de recebimento.
             </AlertDescription>
-          </Alert>
-        )}
+        </Alert>
 
         <div className="rounded-md border">
           <Table>

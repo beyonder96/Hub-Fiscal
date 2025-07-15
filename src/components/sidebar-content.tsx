@@ -6,11 +6,12 @@ import { usePathname } from 'next/navigation';
 import { Bot, FileCode, FileSpreadsheet, Search, Shield, Users, BookOpen, GitCommit, LayoutDashboard, FileWarning } from "lucide-react";
 import { cn } from '@/lib/utils';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { Badge } from './ui/badge';
 
 const navLinks = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/consulta-aliquota", label: "Consulta Alíquota", icon: Search },
-  { href: "/validador-xml", label: "Validador XML", icon: FileCode },
+  { href: "/validador-xml", label: "Validador XML", icon: FileCode, beta: true },
   { href: "/calculo-icms-st", label: "Cálculo ICMS-ST", icon: FileSpreadsheet },
   { href: "/pesquisa-tes", label: "Pesquisa de TES", icon: Bot },
   { href: "/chamados", label: "Consulta Prestador", icon: Users },
@@ -48,7 +49,10 @@ export function SidebarContent({ isCollapsed }: SidebarContentProps) {
                     )}
                   >
                     <link.icon className="h-5 w-5 shrink-0" />
-                    <span className={cn("truncate", isCollapsed && "hidden")}>{link.label}</span>
+                    <span className={cn("truncate flex items-center", isCollapsed && "hidden")}>
+                        {link.label}
+                        {link.beta && <Badge variant="secondary" className="ml-2 scale-90">Beta</Badge>}
+                    </span>
                   </Link>
               </TooltipTrigger>
               {isCollapsed && (

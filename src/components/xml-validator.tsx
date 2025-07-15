@@ -563,15 +563,25 @@ export function XmlValidator() {
   return (
     <Card className="w-full max-w-6xl mx-auto shadow-lg border-none">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-2xl font-headline">
-          <FileCode className="h-6 w-6 text-primary" />
-          Validador Fiscal de NFe
-        </CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-2xl font-headline">
+              <FileCode className="h-6 w-6 text-primary" />
+              Validador Fiscal de NFe
+              <Badge variant="outline">Beta</Badge>
+            </CardTitle>
+        </div>
         <CardDescription>
           Arraste e solte até 15 arquivos XML para uma validação fiscal completa, incluindo regras e cálculos.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <Alert className="border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Ferramenta em Beta</AlertTitle>
+            <AlertDescription>
+              Este validador está em fase de testes. Os resultados podem conter imprecisões. Sempre verifique os dados com um profissional.
+            </AlertDescription>
+        </Alert>
         <div
           onDrop={handleDrop}
           onDragOver={(e) => handleDragEvents(e, true)}
