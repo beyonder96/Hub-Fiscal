@@ -7,7 +7,8 @@ import type { RejectedNote } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { FileWarning, Receipt, Search } from "lucide-react";
+import { FileWarning, Receipt, Search, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 export function RejectedNotesViewer() {
   const [notes, setNotes] = useState<RejectedNote[]>([]);
@@ -37,6 +38,8 @@ export function RejectedNotesViewer() {
     note.supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     note.nfeNumber.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  const showNotFoundAlert = searchQuery && filteredNotes.length === 0 && !isLoading;
 
   return (
     <Card className="w-full max-w-6xl mx-auto">
@@ -63,6 +66,17 @@ export function RejectedNotesViewer() {
                 />
             </div>
         </div>
+        
+        {showNotFoundAlert && (
+          <Alert className="mb-4 border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Não encontrou o que procurava?</AlertTitle>
+            <AlertDescription>
+              Caso não encontre a nota, por favor, procure ajuda do setor de recebimento.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="rounded-md border">
           <Table>
             <TableHeader>
