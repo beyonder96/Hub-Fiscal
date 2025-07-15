@@ -195,7 +195,15 @@ export interface TesCode {
 
 // --- ICMS-ST Calculator Definitions ---
 const numericString = (errorMessage: string) => 
-  z.string().min(1, errorMessage).refine(value => {
+  z.string().refine(value => {
+    if (value === "") return true; // Allow empty string
+    const n = parseFloat(value.replace(/\./g, '').replace(',', '.'));
+    return !isNaN(n);
+  }, { message: "Valor inválido." }).transform(v => v === "" ? "0" : v).pipe(z.string().min(1, errorMessage));
+
+const optionalNumericString = () => 
+  z.string().optional().refine(value => {
+    if (!value || value === "") return true; // Allow empty or undefined
     const n = parseFloat(value.replace(/\./g, '').replace(',', '.'));
     return !isNaN(n);
   }, { message: "Valor inválido." });
@@ -212,15 +220,15 @@ const baseIcmsStSchema = z.object({
 export const icmsStSchema = z.discriminatedUnion("operationType", [
   z.object({
     operationType: z.literal("compra"),
-    valorProduto: numericString("Valor do produto é obrigatório."),
-    valorFrete: numericString("Valor do frete é obrigatório."),
-    valorIpi: numericString("Valor do IPI é obrigatório."),
+    valorProduto: optionalNumericString(),
+    valorFrete: optionalNumericString(),
+    valorIpi: optionalNumericString(),
   }).merge(baseIcmsStSchema),
   z.object({
     operationType: z.literal("transferencia"),
-    valorProduto: numericString("Valor do produto é obrigatório."),
-    valorFrete: numericString("Valor do frete é obrigatório."),
-    valorIpi: numericString("Valor do IPI é obrigatório."),
+    valorProduto: optionalNumericString(),
+    valorFrete: optionalNumericString(),
+    valorIpi: optionalNumericString(),
   }).merge(baseIcmsStSchema),
   z.object({
     operationType: z.literal("pecas"),

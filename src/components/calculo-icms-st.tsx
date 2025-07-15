@@ -142,9 +142,9 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
       operationType: "compra",
       ncm: "",
       fornecedor: "",
-      valorProduto: "0",
-      valorFrete: "0",
-      valorIpi: "0",
+      valorProduto: "",
+      valorFrete: "",
+      valorIpi: "",
       aliqIcms: "",
       mva: "",
       aliqIcmsSt: "",
@@ -197,9 +197,9 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
             operationType: "compra",
             ncm: "",
             fornecedor: "",
-            valorProduto: "0",
-            valorFrete: "0",
-            valorIpi: "0",
+            valorProduto: "",
+            valorFrete: "",
+            valorIpi: "",
             aliqIcms: "",
             mva: "",
             aliqIcmsSt: "",
@@ -226,9 +226,9 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         fornecedor: prefillData.fornecedor,
         ncm: '',
         origem4: prefillData.origem4,
-        valorProduto: "0",
-        valorFrete: "0",
-        valorIpi: "0",
+        valorProduto: "",
+        valorFrete: "",
+        valorIpi: "",
         aliqIcms: prefillData.aliqIcms?.toString().replace('.', ',') ?? '',
     });
     toast({ title: "Pronto para o próximo grupo de itens." });
@@ -279,9 +279,12 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
 
     let valorTotalNota = valorMercadoria + valorFrete + valorIpi + valorSt;
     
-    const basePisCofins = data.operationType === 'compra'
-        ? baseIcmsProprio - valorIcmsProprio
-        : 0;
+    let basePisCofins = 0;
+    if (data.operationType === 'compra') {
+        basePisCofins = baseIcmsProprio - valorIcmsProprio;
+    } else if (data.operationType === 'pecas') {
+        basePisCofins = 0;
+    }
 
     const result: CalculationResult = {
       baseSt,
@@ -587,7 +590,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
                   )}
                 />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
                 <FormField control={form.control} name="ncm" render={({ field }) => (<FormItem><FormLabel>NCM</FormLabel><FormControl><Input placeholder="84439933" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 
                 {operationType === 'pecas' ? (
