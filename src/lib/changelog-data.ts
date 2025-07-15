@@ -13,6 +13,27 @@ export interface ChangelogVersion {
 }
 
 export const changelogData: ChangelogVersion[] = [
+   {
+    version: "1.4.0",
+    date: "2025-07-25T12:00:00",
+    changes: [
+      {
+        type: "improvement",
+        description:
+          "Melhorada a Calculadora de ICMS-ST com campos para inserção manual de valores e uma lógica de cálculo específica para 'Peças'.",
+      },
+      {
+        type: "improvement",
+        description:
+          "A barra lateral agora é expansível e recolhível na versão para desktop, e o efeito de desfoque foi aprimorado.",
+      },
+       {
+        type: "fix",
+        description:
+          "Corrigido o campo de e-mail na Consulta de Prestador para permitir a inserção de status textuais (Ex: OK, Pendente).",
+      },
+    ],
+  },
   {
     version: "1.3.0",
     date: "2025-07-20T12:00:00",
@@ -22,15 +43,15 @@ export const changelogData: ChangelogVersion[] = [
         description:
           "Adicionada a ferramenta 'Notas Recusadas' para consulta pública e gerenciamento no painel administrativo.",
       },
+       {
+        type: "improvement",
+        description:
+          "Adicionado campo de pesquisa na tela de 'Notas Recusadas' para facilitar a busca por fornecedor ou número da nota.",
+      },
       {
         type: "fix",
         description:
           "Corrigido um erro no painel administrativo que impedia a seleção de datas nos formulários de acompanhamento de notas.",
-      },
-      {
-        type: "improvement",
-        description:
-          "Adicionado campo de pesquisa na tela de 'Notas Recusadas' para facilitar a busca por fornecedor ou número da nota.",
       },
     ],
   },
