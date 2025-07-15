@@ -280,3 +280,35 @@ export interface Notebook {
   pages: ManualPage[];
   createdAt: string;
 }
+
+// --- Rejected Notes Definitions ---
+
+const dueDateSchema = z.object({
+  id: z.string(),
+  date: z.date({ required_error: "A data é obrigatória." }),
+  value: z.string().min(1, { message: "O valor é obrigatório." })
+});
+
+export const rejectedNoteFormSchema = z.object({
+  nfeNumber: z.string().min(1, "O número da nota é obrigatório."),
+  supplierName: z.string().min(1, "O nome do fornecedor é obrigatório."),
+  issueDate: z.date({ required_error: "A data de emissão é obrigatória." }),
+  rejectionDate: z.date({ required_error: "A data da recusa é obrigatória." }),
+  totalValue: z.string().min(1, "O valor total é obrigatório."),
+  rejectionReason: z.string().min(1, "O motivo é obrigatório."),
+  dueDates: z.array(dueDateSchema).min(1, "Adicione pelo menos uma data de vencimento."),
+});
+
+export type RejectedNoteFormData = z.infer<typeof rejectedNoteFormSchema>;
+export type DueDate = z.infer<typeof dueDateSchema>;
+
+export type RejectedNote = {
+  id: string;
+  nfeNumber: string;
+  supplierName: string;
+  issueDate: string; // ISO String
+  rejectionDate: string; // ISO String
+  totalValue: string;
+  rejectionReason: string;
+  dueDates: { id: string; date: string; value: string }[];
+};

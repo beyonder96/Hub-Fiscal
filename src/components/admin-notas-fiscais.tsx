@@ -49,7 +49,7 @@ export function AdminNotasFiscais() {
         setNotas(JSON.parse(stored));
       }
     } catch (error) {
-      console.error("Failed to load boletos", error);
+      console.error("Failed to load notas", error);
     }
   }, []);
 
@@ -80,7 +80,7 @@ export function AdminNotasFiscais() {
     const updatedNotas = [...notas, newNota];
     saveNotas(updatedNotas);
 
-    toast({ title: "Boleto adicionado com sucesso!" });
+    toast({ title: "Nota adicionada com sucesso!" });
     setIsDialogOpen(false);
     form.reset();
   };
@@ -92,30 +92,33 @@ export function AdminNotasFiscais() {
 
   const deleteNota = (id: string) => {
     saveNotas(notas.filter(n => n.id !== id));
-    toast({ variant: "destructive", title: "Boleto excluído." });
+    toast({ variant: "destructive", title: "Nota excluída." });
   }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-            <CardTitle>Acompanhamento de Boletos</CardTitle>
-            <CardDescription>Adicione e gerencie boletos e seus lembretes de pagamento.</CardDescription>
+            <CardTitle>Acompanhamento de Notas</CardTitle>
+            <CardDescription>Adicione e gerencie notas e seus lembretes de pagamento.</CardDescription>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            if(!open) form.reset();
+            setIsDialogOpen(open);
+        }}>
           <DialogTrigger asChild>
-            <Button><FilePlus className="mr-2"/>Adicionar Boleto</Button>
+            <Button><FilePlus className="mr-2"/>Adicionar Nota</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Novo Boleto</DialogTitle>
-              <DialogDescription>Preencha os dados do boleto para acompanhamento.</DialogDescription>
+              <DialogTitle>Nova Nota de Acompanhamento</DialogTitle>
+              <DialogDescription>Preencha os dados da nota para acompanhamento.</DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                  <FormField control={form.control} name="number" render={({ field }) => (
                      <FormItem>
-                         <FormLabel>Número da Nota/Boleto</FormLabel>
+                         <FormLabel>Número da Nota</FormLabel>
                          <FormControl><Input placeholder="Ex: 123456" {...field} /></FormControl>
                          <FormMessage />
                      </FormItem>
@@ -208,7 +211,7 @@ export function AdminNotasFiscais() {
                                 <Button size="icon" variant="outline" onClick={() => toggleStatus(nota.id)} title={nota.status === 'Pendente' ? 'Marcar como Concluída' : 'Marcar como Pendente'}>
                                     <Check className="h-4 w-4" />
                                 </Button>
-                                <Button size="icon" variant="destructive" onClick={() => deleteNota(nota.id)} title="Excluir Boleto">
+                                <Button size="icon" variant="destructive" onClick={() => deleteNota(nota.id)} title="Excluir Nota">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                            </TableCell>
@@ -218,7 +221,7 @@ export function AdminNotasFiscais() {
                      <TableRow>
                         <TableCell colSpan={5} className="h-24 text-center">
                             <Receipt className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                            Nenhum boleto adicionado ainda.
+                            Nenhuma nota adicionada ainda.
                         </TableCell>
                     </TableRow>
                    )}

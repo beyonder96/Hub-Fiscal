@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, FileCode, FileSpreadsheet, Search, Shield, Users, BookOpen, GitCommit, LayoutDashboard } from "lucide-react";
+import { Bot, FileCode, FileSpreadsheet, Search, Shield, Users, BookOpen, GitCommit, LayoutDashboard, FileWarning } from "lucide-react";
 import { cn } from '@/lib/utils';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
@@ -14,6 +14,7 @@ const navLinks = [
   { href: "/calculo-icms-st", label: "Cálculo ICMS-ST", icon: FileSpreadsheet },
   { href: "/pesquisa-tes", label: "Pesquisa de TES", icon: Bot },
   { href: "/chamados", label: "Consulta Prestador", icon: Users },
+  { href: "/notas-recusadas", label: "Notas Recusadas", icon: FileWarning },
   { href: "/manuais", label: "Manuais", icon: BookOpen },
   { href: "/updates", label: "Atualizações", icon: GitCommit },
   { href: "/admin", label: "Admin", icon: Shield },

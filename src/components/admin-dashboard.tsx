@@ -5,6 +5,7 @@ import { ChangePasswordDialog } from "./change-password-dialog";
 import { AdminTasks } from "./admin-tasks";
 import { AdminAliquotas } from "./admin-aliquotas";
 import { AdminNotasFiscais } from "./admin-notas-fiscais";
+import { AdminNotasRecusadas } from "./admin-notas-recusadas";
 import { ManualsManager } from "./manuals-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -24,9 +25,10 @@ export function AdminDashboard() {
             </header>
             
              <Tabs defaultValue="tarefas" className="w-full">
-                <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+                <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
                     <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
-                    <TabsTrigger value="notas">Acompanhar Boletos</TabsTrigger>
+                    <TabsTrigger value="notas">Acompanhar Notas</TabsTrigger>
+                    <TabsTrigger value="recusadas">Notas Recusadas</TabsTrigger>
                     <TabsTrigger value="aliquotas">Alíquotas</TabsTrigger>
                     <TabsTrigger value="manuais">Manuais</TabsTrigger>
                 </TabsList>
@@ -35,6 +37,9 @@ export function AdminDashboard() {
                 </TabsContent>
                 <TabsContent value="notas">
                     <AdminNotasFiscais />
+                </TabsContent>
+                 <TabsContent value="recusadas">
+                    <AdminNotasRecusadas />
                 </TabsContent>
                 <TabsContent value="aliquotas">
                     <AdminAliquotas />
