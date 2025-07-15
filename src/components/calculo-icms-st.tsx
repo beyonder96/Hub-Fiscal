@@ -151,6 +151,8 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
       origem4: false,
     },
   });
+
+  const operationType = form.watch("operationType");
   
   const availableProducts = prefillData?.products?.filter((p: NfeProductData) => 
     !completedCalculations.some(calc => calc.selectedItems.some(item => item.item === p.item))
@@ -238,17 +240,27 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         return;
     }
     
-    let valorMercadoria, valorFrete, valorIpi;
+    let valorMercadoria = 0;
+    let valorFrete = 0;
+    let valorIpi = 0;
 
-    if (prefillData && selectedItemIds.length > 0) {
-        const proportionalValues = calculateProportionalValues(selectedItemIds);
-        valorMercadoria = proportionalValues.valorMercadoria;
-        valorFrete = proportionalValues.valorFrete;
-        valorIpi = proportionalValues.valorIpi;
+    if (data.operationType === 'pecas') {
+        const valorTotalPecas = parseLocaleString(data.valorTotalPecas);
+        const aliqIpiPecas = parseLocaleString(data.aliqIpiPecas);
+        valorMercadoria = valorTotalPecas / (1 + (aliqIpiPecas / 100));
+        valorIpi = valorTotalPecas - valorMercadoria;
+        valorFrete = 0; // Frete is not part of this specific calculation
     } else {
-        valorMercadoria = parseLocaleString(data.valorProduto);
-        valorFrete = parseLocaleString(data.valorFrete);
-        valorIpi = parseLocaleString(data.valorIpi);
+        if (prefillData && selectedItemIds.length > 0) {
+            const proportionalValues = calculateProportionalValues(selectedItemIds);
+            valorMercadoria = proportionalValues.valorMercadoria;
+            valorFrete = proportionalValues.valorFrete;
+            valorIpi = proportionalValues.valorIpi;
+        } else {
+            valorMercadoria = parseLocaleString(data.valorProduto);
+            valorFrete = parseLocaleString(data.valorFrete);
+            valorIpi = parseLocaleString(data.valorIpi);
+        }
     }
     
     const aliqIcms = parseLocaleString(data.aliqIcms);
@@ -308,11 +320,23 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
     const calculationsHtml = completedCalculations.map((calc, index) => {
         const itemsList = calc.selectedItems.map(p => `<li>${p.xProd} (Item ${p.item})</li>`).join('');
         const hasPrefill = calc.selectedItems.length > 0;
-        const proportionalValues = hasPrefill ? calculateProportionalValues(calc.selectedItems.map(i => i.item)) : {
-            valorMercadoria: parseLocaleString(calc.formData.valorProduto),
-            valorFrete: parseLocaleString(calc.formData.valorFrete),
-            valorIpi: parseLocaleString(calc.formData.valorIpi),
-        };
+        
+        let proportionalValues;
+        if (calc.formData.operationType === 'pecas') {
+             const valorTotalPecas = parseLocaleString(calc.formData.valorTotalPecas);
+             const aliqIpiPecas = parseLocaleString(calc.formData.aliqIpiPecas);
+             const valorMercadoria = valorTotalPecas / (1 + (aliqIpiPecas / 100));
+             const valorIpi = valorTotalPecas - valorMercadoria;
+             proportionalValues = { valorMercadoria, valorIpi, valorFrete: 0 };
+        } else if (hasPrefill) {
+            proportionalValues = calculateProportionalValues(calc.selectedItems.map(i => i.item));
+        } else {
+            proportionalValues = {
+                valorMercadoria: parseLocaleString(calc.formData.valorProduto),
+                valorFrete: parseLocaleString(calc.formData.valorFrete),
+                valorIpi: parseLocaleString(calc.formData.valorIpi),
+            };
+        }
 
         return `
         <div class="subtitle">
@@ -562,11 +586,18 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
                     </FormItem>
                   )}
                 />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="valorProduto" render={({ field }) => (<FormItem><FormLabel>Valor do Produto *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1000,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="100,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
-              </div>
-              <FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="50,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+              {operationType === 'pecas' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="valorTotalPecas" render={({ field }) => (<FormItem><FormLabel>Valor Total (c/ IPI) *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1050,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="aliqIpiPecas" render={({ field }) => (<FormItem><FormLabel>Alíquota IPI (%) *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="5,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="valorProduto" render={({ field }) => (<FormItem><FormLabel>Valor do Produto *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1000,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="100,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="50,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                 <FormField control={form.control} name="ncm" render={({ field }) => (<FormItem><FormLabel>NCM</FormLabel><FormControl><Input placeholder="84439933" {...field} /></FormControl><FormMessage /></FormItem>)} />

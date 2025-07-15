@@ -200,20 +200,37 @@ const numericString = (errorMessage: string) =>
     return !isNaN(n);
   }, { message: "Valor inválido." });
 
-export const icmsStSchema = z.object({
-  operationType: z.enum(['compra', 'transferencia', 'pecas'], { required_error: "Selecione o tipo de operação." }),
+const baseIcmsStSchema = z.object({
   ncm: z.string().optional(),
   fornecedor: z.string().optional(),
-  valorProduto: numericString("Valor do produto é obrigatório."),
-  valorFrete: numericString("Valor do frete é obrigatório."),
-  valorIpi: numericString("Valor do IPI é obrigatório."),
   aliqIcms: numericString("Alíquota ICMS é obrigatória."),
   mva: numericString("IVA/MVA é obrigatório."),
   aliqIcmsSt: numericString("Alíquota ICMS-ST é obrigatória."),
   origem4: z.boolean().optional(),
 });
 
+export const icmsStSchema = z.discriminatedUnion("operationType", [
+  z.object({
+    operationType: z.literal("compra"),
+    valorProduto: numericString("Valor do produto é obrigatório."),
+    valorFrete: numericString("Valor do frete é obrigatório."),
+    valorIpi: numericString("Valor do IPI é obrigatório."),
+  }).merge(baseIcmsStSchema),
+  z.object({
+    operationType: z.literal("transferencia"),
+    valorProduto: numericString("Valor do produto é obrigatório."),
+    valorFrete: numericString("Valor do frete é obrigatório."),
+    valorIpi: numericString("Valor do IPI é obrigatório."),
+  }).merge(baseIcmsStSchema),
+  z.object({
+    operationType: z.literal("pecas"),
+    valorTotalPecas: numericString("Valor total é obrigatório."),
+    aliqIpiPecas: numericString("Alíquota IPI é obrigatória."),
+  }).merge(baseIcmsStSchema),
+]);
+
 export type IcmsStFormData = z.infer<typeof icmsStSchema>;
+
 
 // --- Prestador Lookup Definitions ---
 const SimNaoEnum = z.enum(['SIM', 'NÃO', '']).optional();
