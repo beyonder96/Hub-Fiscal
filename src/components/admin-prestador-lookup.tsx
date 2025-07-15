@@ -444,7 +444,7 @@ export function PrestadorLookup() {
                      </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="text" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       <FormField control={form.control} name="autenticidadeUrl" render={({ field }) => (<FormItem><FormLabel>URL de Autenticidade</FormLabel><FormControl><Input type="url" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </div>
@@ -460,5 +460,3 @@ export function PrestadorLookup() {
     </Card>
   );
 }
-
-    
