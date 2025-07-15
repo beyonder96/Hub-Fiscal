@@ -586,25 +586,32 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
                     </FormItem>
                   )}
                 />
-              {operationType === 'pecas' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="valorTotalPecas" render={({ field }) => (<FormItem><FormLabel>Valor Total (c/ IPI) *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1050,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="aliqIpiPecas" render={({ field }) => (<FormItem><FormLabel>Alíquota IPI (%) *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="5,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="valorProduto" render={({ field }) => (<FormItem><FormLabel>Valor do Produto *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1000,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="100,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="50,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
-                </div>
-              )}
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
                 <FormField control={form.control} name="ncm" render={({ field }) => (<FormItem><FormLabel>NCM</FormLabel><FormControl><Input placeholder="84439933" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="fornecedor" render={({ field }) => (<FormItem><FormLabel>Fornecedor</FormLabel><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="Nome do fornecedor" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                
+                {operationType === 'pecas' ? (
+                    <FormField control={form.control} name="valorTotalPecas" render={({ field }) => (<FormItem><FormLabel>Valor Total (c/ IPI) *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1050,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                ) : (
+                    <FormField control={form.control} name="valorProduto" render={({ field }) => (<FormItem><FormLabel>Valor do Produto *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1000,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                )}
+
                 <FormField control={form.control} name="aliqIcms" render={({ field }) => (<FormItem><FormLabel>Alíq. ICMS *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="12,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                
+                {operationType === 'pecas' ? (
+                  <FormField control={form.control} name="aliqIpiPecas" render={({ field }) => (<FormItem><FormLabel>Alíquota IPI (%) *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="5,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                ) : (
+                  <FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="50,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                )}
+
+                {operationType !== 'pecas' && (
+                  <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="100,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                )}
+
                 <FormField control={form.control} name="mva" render={({ field }) => (<FormItem><FormLabel>IVA/MVA *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="29,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                
                 <FormField control={form.control} name="aliqIcmsSt" render={({ field }) => (<FormItem><FormLabel>Alíq. ICMS ST *</FormLabel><div className="relative"><Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="18,00" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
+                
                 <FormField
                   control={form.control}
                   name="origem4"
@@ -629,6 +636,8 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
                     </FormItem>
                   )}
                 />
+
+                <FormField control={form.control} name="fornecedor" render={({ field }) => (<FormItem><FormLabel>Fornecedor</FormLabel><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="Nome do fornecedor" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
               </div>
             </CardContent>
             <CardFooter className="flex gap-4">
