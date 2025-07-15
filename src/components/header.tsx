@@ -37,7 +37,7 @@ export function Header() {
                    <span className="sr-only">Calculadora</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full max-w-sm p-0 border-none">
+              <PopoverContent className="w-80 p-0 border-none">
                 <SimpleCalculator />
               </PopoverContent>
            </Popover>

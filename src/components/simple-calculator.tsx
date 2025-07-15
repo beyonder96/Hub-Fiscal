@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ export function SimpleCalculator() {
   const [result, setResult] = useState('');
 
   const handleButtonClick = (value: string) => {
+    if (value === '.' && input.includes('.')) return;
     if (result) {
       setInput(result + value);
       setResult('');
@@ -30,16 +31,45 @@ export function SimpleCalculator() {
   };
 
   const handleEquals = () => {
+    if (!input) return;
     try {
       // Replace comma with dot for evaluation
-      const evalInput = input.replace(/,/g, '.');
+      const evalInput = input.replace(/,/g, '.').replace(/[^0-9.*/+\-()]/g, '');
       // eslint-disable-next-line no-eval
       const evalResult = eval(evalInput);
-      setResult(String(evalResult).replace(/\./g, ','));
+      if (evalResult === Infinity || isNaN(evalResult)) {
+        setResult('Erro');
+      } else {
+        setResult(String(evalResult).replace(/\./g, ','));
+      }
     } catch (error) {
       setResult('Erro');
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const { key } = event;
+      if (/[0-9]/.test(key)) {
+        handleButtonClick(key);
+      } else if (['/', '*', '-', '+', '.'].includes(key)) {
+        handleButtonClick(key === '.' ? ',' : key);
+      } else if (key === 'Enter' || key === '=') {
+        event.preventDefault();
+        handleEquals();
+      } else if (key === 'Backspace') {
+        handleBackspace();
+      } else if (key.toLowerCase() === 'c' || key === 'Escape') {
+        handleClear();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, result]);
 
   const buttons = [
     { label: 'C', handler: handleClear, className: 'col-span-2 bg-red-500/10 text-red-500 hover:bg-red-500/20' },
@@ -63,7 +93,7 @@ export function SimpleCalculator() {
   ];
 
   return (
-    <Card className="w-full max-w-sm shadow-none border-none p-4">
+    <Card className="w-full shadow-none border-none p-4">
       <div className="text-left mb-4">
         <div className="flex items-center gap-2">
             <Calculator className="h-6 w-6 text-primary" />
@@ -74,9 +104,9 @@ export function SimpleCalculator() {
         </p>
       </div>
       <CardContent className="p-0 pt-4">
-        <div className="bg-muted rounded-lg p-4 text-right mb-4 min-h-[100px] flex flex-col justify-end">
-          <div className="text-muted-foreground break-all text-lg">{input || '0'}</div>
-          <div className="text-4xl font-bold break-all">{result}</div>
+        <div className="bg-muted rounded-lg p-4 text-right mb-4 min-h-[90px] flex flex-col justify-end">
+          <div className="text-muted-foreground break-all text-base">{input || '0'}</div>
+          <div className="text-3xl font-bold break-all">{result}</div>
         </div>
         <div className="grid grid-cols-4 gap-2">
           {buttons.map((btn) => (
@@ -84,7 +114,7 @@ export function SimpleCalculator() {
               key={btn.label}
               onClick={btn.handler}
               variant="outline"
-              className={cn('h-16 text-2xl font-bold', btn.className)}
+              className={cn('h-12 text-xl font-bold', btn.className)}
             >
               {btn.label}
             </Button>
