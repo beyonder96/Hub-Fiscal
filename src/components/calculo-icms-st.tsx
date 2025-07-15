@@ -156,7 +156,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
     !completedCalculations.some(calc => calc.selectedItems.some(item => item.item === p.item))
   ) || [];
 
-  const parseLocaleString = (value: string) => parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
+  const parseLocaleString = (value: string | undefined) => parseFloat(value?.replace(/\./g, '').replace(',', '.') || '0') || 0;
 
    const calculateProportionalValues = (selectedIds: string[]) => {
       if (!prefillData?.products || selectedIds.length === 0) {
@@ -240,7 +240,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
     
     let valorMercadoria, valorFrete, valorIpi;
 
-    if (prefillData) {
+    if (prefillData && selectedItemIds.length > 0) {
         const proportionalValues = calculateProportionalValues(selectedItemIds);
         valorMercadoria = proportionalValues.valorMercadoria;
         valorFrete = proportionalValues.valorFrete;
@@ -556,15 +556,16 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
                         <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col sm:flex-row gap-4">
                           <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="compra" id="op-compra" /></FormControl><FormLabel htmlFor="op-compra" className="font-normal cursor-pointer">Compra</FormLabel></FormItem>
                           <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="transferencia" id="op-transfer" /></FormControl><FormLabel htmlFor="op-transfer" className="font-normal cursor-pointer">Transferência</FormLabel></FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="pecas" id="op-pecas" /></FormControl><FormLabel htmlFor="op-pecas" className="font-normal cursor-pointer">Peças</FormLabel></FormItem>
                         </RadioGroup>
                       </FormControl><FormMessage />
                     </FormItem>
                   )}
                 />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FormField control={form.control} name="valorProduto" render={({ field }) => (<FormItem><FormLabel>Valor do Produto *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1000,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="100,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="50,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="valorProduto" render={({ field }) => (<FormItem><FormLabel>Valor do Produto</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1000,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="100,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="50,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
                  <FormField control={form.control} name="ncm" render={({ field }) => (<FormItem><FormLabel>NCM</FormLabel><FormControl><Input placeholder="84439933" {...field} /></FormControl><FormMessage /></FormItem>)} />
