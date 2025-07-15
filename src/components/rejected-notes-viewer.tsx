@@ -6,36 +6,37 @@ import { format, parseISO } from "date-fns";
 import type { RejectedNote } from "@/lib/definitions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileWarning, Receipt } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { FileWarning, Receipt, Search } from "lucide-react";
 
 export function RejectedNotesViewer() {
   const [notes, setNotes] = useState<RejectedNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("rejectedNotes");
-      if (stored) {
-        setNotes(JSON.parse(stored));
-      }
-    } catch (error) {
-      console.error("Failed to load rejected notes", error);
-    } finally {
-        setIsLoading(false);
-    }
-    
-    const handleStorageChange = () => {
+    const loadNotes = () => {
         try {
-            const stored = localStorage.getItem("rejectedNotes");
-            if (stored) setNotes(JSON.parse(stored));
+          const stored = localStorage.getItem("rejectedNotes");
+          if (stored) {
+            setNotes(JSON.parse(stored));
+          }
         } catch (error) {
-            console.error("Failed to reload rejected notes on storage event", error);
+          console.error("Failed to load rejected notes", error);
+        } finally {
+            setIsLoading(false);
         }
     };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+
+    loadNotes();
+    window.addEventListener('storage', loadNotes);
+    return () => window.removeEventListener('storage', loadNotes);
   }, []);
+
+  const filteredNotes = notes.filter(note => 
+    note.supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    note.nfeNumber.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <Card className="w-full max-w-6xl mx-auto">
@@ -51,6 +52,17 @@ export function RejectedNotesViewer() {
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4">
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                    placeholder="Pesquisar por fornecedor ou número da nota..."
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+        </div>
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -69,8 +81,8 @@ export function RejectedNotesViewer() {
                 <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">Carregando...</TableCell>
                 </TableRow>
-              ) : notes.length > 0 ? (
-                notes.map((note) => (
+              ) : filteredNotes.length > 0 ? (
+                filteredNotes.map((note) => (
                   <TableRow key={note.id}>
                     <TableCell className="font-medium">{note.nfeNumber}</TableCell>
                     <TableCell>{note.supplierName}</TableCell>
@@ -93,7 +105,7 @@ export function RejectedNotesViewer() {
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center">
                     <Receipt className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    Nenhuma nota recusada encontrada.
+                    {searchQuery ? "Nenhum resultado para sua busca." : "Nenhuma nota recusada encontrada."}
                   </TableCell>
                 </TableRow>
               )}
