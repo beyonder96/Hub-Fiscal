@@ -67,6 +67,13 @@ export function AdminNotasRecusadas() {
 
   const form = useForm<RejectedNoteFormData>({
     resolver: zodResolver(rejectedNoteFormSchema),
+    defaultValues: {
+      nfeNumber: "",
+      supplierName: "",
+      totalValue: "",
+      rejectionReason: "",
+      dueDates: [],
+    },
   });
 
   const { fields, append, remove, replace } = useFieldArray({
@@ -133,7 +140,15 @@ export function AdminNotasRecusadas() {
   
   const handleAddNew = () => {
       setEditingNoteId(null);
-      form.reset({ dueDates: [{ id: `due-${Date.now()}`, date: new Date(), value: '' }] });
+      form.reset({ 
+          nfeNumber: "",
+          supplierName: "",
+          totalValue: "",
+          rejectionReason: "",
+          issueDate: new Date(),
+          rejectionDate: new Date(),
+          dueDates: [{ id: `due-${Date.now()}`, date: new Date(), value: '' }] 
+      });
       setIsFormVisible(true);
   }
   
@@ -253,3 +268,5 @@ export function AdminNotasRecusadas() {
     </Card>
   )
 }
+
+    
