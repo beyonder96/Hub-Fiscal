@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Bot, FileCode, FileSpreadsheet, Search, Users } from "lucide-react";
+import { ArrowRight, Bot, FileCode, FileSpreadsheet, Search, Users, FileWarning } from "lucide-react";
 import Link from "next/link";
 
 const features = [
@@ -44,6 +44,14 @@ const features = [
     href: "/pesquisa-tes",
     bgColor: "bg-yellow-500/10",
     textColor: "text-yellow-300"
+  },
+  {
+    icon: <FileWarning className="h-8 w-8 text-primary" />,
+    title: "Notas Recusadas",
+    description: "Consulte o histórico de notas fiscais que foram recusadas.",
+    href: "/notas-recusadas",
+    bgColor: "bg-red-500/10",
+    textColor: "text-red-300"
   },
 ];
 

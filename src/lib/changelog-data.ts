@@ -14,6 +14,27 @@ export interface ChangelogVersion {
 
 export const changelogData: ChangelogVersion[] = [
   {
+    version: "1.3.0",
+    date: "2025-07-20T12:00:00",
+    changes: [
+      {
+        type: "feature",
+        description:
+          "Adicionada a ferramenta 'Notas Recusadas' para consulta pública e gerenciamento no painel administrativo.",
+      },
+      {
+        type: "fix",
+        description:
+          "Corrigido um erro no painel administrativo que impedia a seleção de datas nos formulários de acompanhamento de notas.",
+      },
+      {
+        type: "improvement",
+        description:
+          "Adicionado campo de pesquisa na tela de 'Notas Recusadas' para facilitar a busca por fornecedor ou número da nota.",
+      },
+    ],
+  },
+  {
     version: "1.2.0",
     date: "2025-07-15T12:00:00",
     changes: [
