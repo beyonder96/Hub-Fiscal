@@ -142,6 +142,9 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
       operationType: "compra",
       ncm: "",
       fornecedor: "",
+      valorProduto: "0",
+      valorFrete: "0",
+      valorIpi: "0",
       aliqIcms: "",
       mva: "",
       aliqIcmsSt: "",
@@ -153,8 +156,25 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
     !completedCalculations.some(calc => calc.selectedItems.some(item => item.item === p.item))
   ) || [];
 
+  const parseLocaleString = (value: string) => parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
+
+   const calculateProportionalValues = (selectedIds: string[]) => {
+      if (!prefillData?.products || selectedIds.length === 0) {
+        return { valorMercadoria: 0, valorFrete: 0, valorIpi: 0 };
+      }
+      return prefillData.products
+        .filter((p: NfeProductData) => selectedIds.includes(p.item))
+        .reduce((acc, p) => {
+            acc.valorMercadoria += parseFloat(p.vProd || '0');
+            acc.valorFrete += parseFloat(p.vFrete || '0');
+            acc.valorIpi += parseFloat(p.ipi?.vIPI || '0');
+            return acc;
+        }, { valorMercadoria: 0, valorFrete: 0, valorIpi: 0 });
+  }
+
   useEffect(() => {
     if (prefillData && !editingId) {
+      const { valorMercadoria, valorFrete, valorIpi } = calculateProportionalValues(selectedItemIds);
       form.reset({
         ...form.getValues(),
         operationType: prefillData.operationType,
@@ -162,11 +182,30 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         ncm: prefillData.ncm,
         origem4: prefillData.origem4,
         aliqIcms: prefillData.aliqIcms?.toString().replace('.', ',') ?? '',
+        valorProduto: valorMercadoria.toFixed(2).replace('.', ','),
+        valorFrete: valorFrete.toFixed(2).replace('.', ','),
+        valorIpi: valorIpi.toFixed(2).replace('.', ','),
       });
     }
-  }, [prefillData, editingId]);
+  }, [prefillData, editingId, selectedItemIds, form]);
 
-  const parseLocaleString = (value: string) => parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
+  useEffect(() => {
+    if (!prefillData) {
+        form.reset({
+            operationType: "compra",
+            ncm: "",
+            fornecedor: "",
+            valorProduto: "0",
+            valorFrete: "0",
+            valorIpi: "0",
+            aliqIcms: "",
+            mva: "",
+            aliqIcmsSt: "",
+            origem4: false,
+        });
+    }
+  }, [prefillData, form]);
+
 
   const handleNewFullCalculation = () => {
     setStep('calculating');
@@ -185,31 +224,32 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         fornecedor: prefillData.fornecedor,
         ncm: '',
         origem4: prefillData.origem4,
+        valorProduto: "0",
+        valorFrete: "0",
+        valorIpi: "0",
         aliqIcms: prefillData.aliqIcms?.toString().replace('.', ',') ?? '',
     });
     toast({ title: "Pronto para o próximo grupo de itens." });
   };
   
-  const calculateProportionalValues = (selectedIds: string[]) => {
-      if (!prefillData?.products || selectedIds.length === 0) {
-        return { valorMercadoria: 0, valorFrete: 0, valorIpi: 0 };
-      }
-      return prefillData.products
-        .filter((p: NfeProductData) => selectedIds.includes(p.item))
-        .reduce((acc, p) => {
-            acc.valorMercadoria += parseFloat(p.vProd || '0');
-            acc.valorFrete += parseFloat(p.vFrete || '0');
-            acc.valorIpi += parseFloat(p.ipi?.vIPI || '0');
-            return acc;
-        }, { valorMercadoria: 0, valorFrete: 0, valorIpi: 0 });
-  }
-
   const onSubmit = (data: IcmsStFormData) => {
-    if (selectedItemIds.length === 0) {
+    if (prefillData && selectedItemIds.length === 0) {
         toast({ variant: 'destructive', title: 'Nenhum item selecionado', description: 'Por favor, selecione ao menos um item da nota para calcular.' });
         return;
     }
-    const { valorMercadoria, valorFrete, valorIpi } = calculateProportionalValues(selectedItemIds);
+    
+    let valorMercadoria, valorFrete, valorIpi;
+
+    if (prefillData) {
+        const proportionalValues = calculateProportionalValues(selectedItemIds);
+        valorMercadoria = proportionalValues.valorMercadoria;
+        valorFrete = proportionalValues.valorFrete;
+        valorIpi = proportionalValues.valorIpi;
+    } else {
+        valorMercadoria = parseLocaleString(data.valorProduto);
+        valorFrete = parseLocaleString(data.valorFrete);
+        valorIpi = parseLocaleString(data.valorIpi);
+    }
     
     const aliqIcms = parseLocaleString(data.aliqIcms);
     const mva = parseLocaleString(data.mva);
@@ -240,7 +280,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
       valorIpi
     };
     
-    const selectedItems = prefillData.products.filter((p: NfeProductData) => selectedItemIds.includes(p.item));
+    const selectedItems = prefillData ? prefillData.products.filter((p: NfeProductData) => selectedItemIds.includes(p.item)) : [];
     const completedCalc: CompletedCalculation = { id: editingId || new Date().getTime().toString(), formData: data, result, selectedItems };
 
     if (editingId) {
@@ -254,7 +294,12 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         setCompletedCalculations(prev => [...prev, completedCalc]);
         toast({ title: `Grupo de cálculo adicionado!` });
     }
-    handleNewCalculationGroup();
+    
+    if (prefillData) {
+      handleNewCalculationGroup();
+    } else {
+      setStep('results');
+    }
   };
   
   const handlePrint = () => {
@@ -262,24 +307,29 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
 
     const calculationsHtml = completedCalculations.map((calc, index) => {
         const itemsList = calc.selectedItems.map(p => `<li>${p.xProd} (Item ${p.item})</li>`).join('');
-        const proportionalValues = calculateProportionalValues(calc.selectedItems.map(i => i.item));
+        const hasPrefill = calc.selectedItems.length > 0;
+        const proportionalValues = hasPrefill ? calculateProportionalValues(calc.selectedItems.map(i => i.item)) : {
+            valorMercadoria: parseLocaleString(calc.formData.valorProduto),
+            valorFrete: parseLocaleString(calc.formData.valorFrete),
+            valorIpi: parseLocaleString(calc.formData.valorIpi),
+        };
 
         return `
         <div class="subtitle">
           Cálculo ${index + 1} de ${completedCalculations.length} · Tipo: <strong>${calc.formData.operationType}</strong> · Fornecedor: <strong>${calc.formData.fornecedor || 'N/A'}</strong>
         </div>
-        <div class="items-applied">
+        ${hasPrefill ? `<div class="items-applied">
             <strong>Itens Aplicados:</strong>
             <ul>${itemsList}</ul>
-        </div>
+        </div>` : ''}
 
-        <div class="section-title">📍 Detalhes da Operação (Proporcional)</div>
+        <div class="section-title">📍 Detalhes da Operação ${hasPrefill ? '(Proporcional)' : '(Manual)'}</div>
         <table>
           <tr><th>Campo</th><th style="text-align:right;">Valor</th></tr>
           <tr><td>NCM</td><td style="text-align:right;">${calc.formData.ncm || 'N/A'}</td></tr>
-          <tr><td>Valor Mercadoria (Itens)</td><td style="text-align:right;">${formatCurrency(proportionalValues.valorMercadoria)}</td></tr>
-          <tr><td>Valor do Frete (Itens)</td><td style="text-align:right;">${formatCurrency(proportionalValues.valorFrete)}</td></tr>
-          <tr><td>Valor do IPI (Itens)</td><td style="text-align:right;">${formatCurrency(proportionalValues.valorIpi)}</td></tr>
+          <tr><td>Valor Mercadoria</td><td style="text-align:right;">${formatCurrency(proportionalValues.valorMercadoria)}</td></tr>
+          <tr><td>Valor do Frete</td><td style="text-align:right;">${formatCurrency(proportionalValues.valorFrete)}</td></tr>
+          <tr><td>Valor do IPI</td><td style="text-align:right;">${formatCurrency(proportionalValues.valorIpi)}</td></tr>
           <tr><td>Alíquota ICMS</td><td style="text-align:right;">${formatPercent(calc.formData.aliqIcms)}</td></tr>
           <tr><td>IVA/MVA</td><td style="text-align:right;">${formatPercent(calc.formData.mva)}</td></tr>
           <tr><td>Alíquota ICMS-ST</td><td style="text-align:right;">${formatPercent(calc.formData.aliqIcmsSt)}</td></tr>
@@ -440,6 +490,8 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
 
   const renderCalculator = () => {
     const isEditing = editingId !== null;
+    const isPrefilled = !!prefillData;
+
     return (
       <Card className="w-full max-w-4xl mx-auto shadow-lg border">
         <CardHeader>
@@ -448,7 +500,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
             {isEditing ? `Editando Grupo de Cálculo` : `Calculadora de ICMS-ST`}
           </CardTitle>
           <CardDescription>
-            {prefillData?.products 
+            {isPrefilled
                 ? 'Selecione os itens da nota e preencha os campos para calcular a ST.' 
                 : 'Insira os valores para calcular a Substituição Tributária.'}
           </CardDescription>
@@ -456,7 +508,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
-              {prefillData?.products && (
+              {isPrefilled && (
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-lg">
@@ -509,6 +561,11 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
                     </FormItem>
                   )}
                 />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <FormField control={form.control} name="valorProduto" render={({ field }) => (<FormItem><FormLabel>Valor do Produto *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="1000,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="valorFrete" render={({ field }) => (<FormItem><FormLabel>Valor do Frete *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="100,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="valorIpi" render={({ field }) => (<FormItem><FormLabel>Valor do IPI *</FormLabel><div className="relative"><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="50,00" className="pl-9" {...field} disabled={isPrefilled} /></FormControl></div><FormMessage /></FormItem>)} />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
                  <FormField control={form.control} name="ncm" render={({ field }) => (<FormItem><FormLabel>NCM</FormLabel><FormControl><Input placeholder="84439933" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="fornecedor" render={({ field }) => (<FormItem><FormLabel>Fornecedor</FormLabel><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input placeholder="Nome do fornecedor" className="pl-9" {...field} /></FormControl></div><FormMessage /></FormItem>)} />
@@ -550,7 +607,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
                 ) : (
                     <Button type="submit" className="w-full bg-gradient-to-r from-accent to-primary text-white font-bold">
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Adicionar Grupo de Cálculo
+                      {isPrefilled ? 'Adicionar Grupo de Cálculo' : 'Calcular e Ver Resultado'}
                     </Button>
                 )}
             </CardFooter>
@@ -585,8 +642,12 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
                     <div>
                         <CardTitle>Grupo de Cálculo {index + 1}</CardTitle>
                         <CardDescription>
-                            <Badge variant="secondary" className="mr-2">{calc.selectedItems.length} {calc.selectedItems.length > 1 ? 'itens' : 'item'}</Badge>
-                            {calc.selectedItems.map(i => i.xProd).join(', ').substring(0, 100)}...
+                            {calc.selectedItems.length > 0 ? (
+                                <>
+                                    <Badge variant="secondary" className="mr-2">{calc.selectedItems.length} {calc.selectedItems.length > 1 ? 'itens' : 'item'}</Badge>
+                                    {calc.selectedItems.map(i => i.xProd).join(', ').substring(0, 100)}...
+                                </>
+                            ) : "Cálculo Manual"}
                         </CardDescription>
                     </div>
                     <div className="flex gap-2">
@@ -603,7 +664,7 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
              </Card>
           ))}
         </div>
-        {availableProducts.length > 0 && (
+        {prefillData && availableProducts.length > 0 && (
             <div className="text-center p-4">
                  <Button onClick={() => setStep('calculating')}>
                     <PlusCircle className="mr-2" />
@@ -616,27 +677,17 @@ export default function CalculoIcmsSt({ prefillData }: { prefillData?: any }) {
   };
 
   const renderContent = () => {
-    // If we have completed calculations, always show results.
-    // The user can choose to add more from the results screen.
-    if (completedCalculations.length > 0 && availableProducts.length === 0 && step !== 'calculating') {
-        return renderResults();
-    }
-    
     if (step === 'calculating') {
         return renderCalculator();
     }
-    
-    // Default to results if there are any, otherwise show calculator
     return completedCalculations.length > 0 ? renderResults() : renderCalculator();
   }
-  
-  const allItemsCalculated = prefillData?.products && availableProducts.length === 0;
 
   return (
     <div className="space-y-8">
       {renderContent()}
 
-       {completedCalculations.length > 0 && (
+       {completedCalculations.length > 0 && step !== 'results' && (
             <div className="text-center p-4">
                 <Button size="lg" onClick={() => setStep('results')}>
                     <PackageCheck className="mr-2" />
